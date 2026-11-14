@@ -51,16 +51,16 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   // スマホ横画面時のフォントパネル折りたたみ状態
   const [isFontBarOpen, setIsFontBarOpen] = useState<boolean>(!isMobileLandscape);
 
-  // コンテナサイズに応じた 9:16 自動フィットスケールの計算（上下左右見切れゼロ保証）
+  // コンテナサイズに応じた 9:16 / 16:9 自動フィットスケールの計算（レスポンシブ・見切れゼロ最大表示）
   const calculateFitScale = useCallback(() => {
     if (!displayContainerRef.current) return;
     const { clientWidth, clientHeight } = displayContainerRef.current;
     
-    // コンテナの内側安全マージン（ネオングロー・太枠線・シャドウ・下部ページネーション操作部のはみ出しを確実に防止）
-    const paddingX = isMobileLandscape ? 16 : 28;
+    // コンテナの内側マージンを最小限にして看板の表示サイズを最大化
+    const paddingX = isMobileLandscape ? 8 : 12;
     const paddingY = slidesCount > 1 
-      ? (isMobileLandscape ? 40 : 64) 
-      : (isMobileLandscape ? 20 : 36);
+      ? (isMobileLandscape ? 32 : 44) 
+      : (isMobileLandscape ? 8 : 14);
 
     const availableWidth = Math.max(80, clientWidth - paddingX);
     const availableHeight = Math.max(100, clientHeight - paddingY);
@@ -73,9 +73,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     const scaleByW = availableWidth / baseW;
     const scaleByH = availableHeight / baseH;
     
-    // コンテナ全体に収まる最小比率を適用
+    // コンテナ全体に最も大きく美しく収まる比率を適用
     const fit = Math.min(scaleByW, scaleByH);
-    const clampedFit = Math.max(0.1, Math.min(fit, 1.5)); // 0.1 ～ 1.5倍の範囲に制限
+    const clampedFit = Math.max(0.15, Math.min(fit, 2.0)); // 0.15 ～ 2.0倍の範囲
     
     setAutoScale(clampedFit);
     if (scaleMode === 'auto') {
@@ -114,7 +114,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
   const handleZoomIn = () => {
     setScaleMode('manual');
-    setManualScale((s) => Math.min(1.0, Number((s + 0.05).toFixed(2))));
+    setManualScale((s) => Math.min(2.0, Number((s + 0.05).toFixed(2))));
   };
 
   const handleZoomOut = () => {
@@ -265,7 +265,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       */}
       <div
         ref={displayContainerRef}
-        className="w-full flex-1 min-h-0 bg-slate-100/70 rounded-2xl sm:rounded-3xl border border-slate-200 flex flex-col items-center justify-center overflow-hidden shadow-inner relative p-2"
+        className="w-full flex-1 min-h-[440px] sm:min-h-[540px] bg-slate-100/70 rounded-2xl sm:rounded-3xl border border-slate-200 flex flex-col items-center justify-center overflow-hidden shadow-inner relative p-1.5 sm:p-2.5"
       >
         <div 
           key={`${currentSlide.id}-${replayKey}`}

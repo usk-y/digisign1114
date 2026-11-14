@@ -335,8 +335,8 @@ export default function App() {
           </div>
 
           {/* 右側 / 下部：看板プレビュー */}
-          <div className={`${isWideLayout ? 'lg:w-[380px] xl:w-[440px]' : 'w-full max-w-2xl mx-auto'} flex flex-col shrink-0 min-h-[500px]`}>
-              <div className={`${isWideLayout ? 'sticky top-16 h-[calc(100vh-140px)]' : 'h-full'} flex flex-col`}>
+          <div className={`${isWideLayout ? 'lg:w-[400px] xl:w-[460px] 2xl:w-[500px]' : 'w-full max-w-xl mx-auto'} flex flex-col shrink-0`}>
+            <div className={`${isWideLayout ? 'sticky top-16 h-[calc(100vh-140px)]' : 'h-[640px] sm:h-[740px] max-h-[85vh] min-h-[480px]'} flex flex-col`}>
                 {activeFolderId ? (
                   <PreviewPanel
                     currentSlide={currentSlide}

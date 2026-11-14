@@ -512,6 +512,11 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-snug">
           {stepInfo.title}
         </h2>
+        {currentStepNumber === 2 && (
+          <p className="text-xs sm:text-sm font-black text-rose-600 pt-0.5">
+            ※ 看板の機能に合わせ、一部の機能をスキップします
+          </p>
+        )}
       </div>
 
       <div className="bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-xs">
@@ -870,7 +875,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                       {(isTileTemplate || isPosterTemplate || isMediaOnlyTemplate) && (
                         <div className="text-[10px] font-black text-rose-600 leading-tight">
                           {isTileTemplate
-                            ? '※ 3「縦書き」・8「写真」は選択不可'
+                            ? '※３「縦書き」・８「看板写真」は選択不可'
                             : isPosterTemplate
                             ? '※ 5「背景」・11「メニュー」は選択不可'
                             : '※ 3「文字の向き」・5「背景の模様や色」・8〜11・14は選択不可'}
