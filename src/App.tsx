@@ -186,22 +186,46 @@ export default function App() {
     setIsFullscreen(true);
   };
 
-  // 前のページへ進む
+  // 選択中の形式に応じて利用不可のステップ（タイル形式：10番不可、ポスター形式：5・11番不可）
+  const disabledSteps: StepNumber[] =
+    currentSlide.layoutStyle === 'card-grid'
+      ? [10]
+      : currentSlide.layoutStyle === 'poster-hero'
+      ? [5, 11]
+      : [];
+
+  const disabledStepReasons: Partial<Record<StepNumber, string>> = {
+    5: 'ポスター形式では「5. 背景」は選択できません',
+    10: 'タイル形式では「10. 写真・画像」は選択できません',
+    11: 'ポスター形式では「11. メニュー」は選択できません',
+  };
+
+  // 前のページへ戻る（無効ステップは自動スキップ）
   const handlePrevStep = () => {
-    setCurrentStepNumber((prev) => Math.max(1, prev - 1) as StepNumber);
+    setCurrentStepNumber((prev) => {
+      let next = prev - 1;
+      while (next > 1 && disabledSteps.includes(next as StepNumber)) {
+        next -= 1;
+      }
+      return Math.max(1, next) as StepNumber;
+    });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 次のページへ進む
+  // 次のページへ進む（無効ステップは自動スキップ）
   const handleNextStep = () => {
     if (currentStepNumber === 1 && !activeFolderId) {
       // 看板未作成・未選択時は進めない
       return;
     }
-    if (currentStepNumber < totalSteps) {
-      setCurrentStepNumber((prev) => (prev + 1) as StepNumber);
+    let next = currentStepNumber + 1;
+    while (next <= totalSteps && disabledSteps.includes(next as StepNumber)) {
+      next += 1;
+    }
+    if (next <= totalSteps) {
+      setCurrentStepNumber(next as StepNumber);
     } else {
-      // 最終ステップ（14）で「全画面で再生」
+      // 最終ステップで「全画面で再生」
       handleOpenFullscreen();
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -216,13 +240,14 @@ export default function App() {
         上部ヘッダー：
         ・左上看板ボタンから○枚目を直接選べるドロップダウン
         ・常に最上部に表示される Undo/Redo 矢印ボタン
-        ・ただの数字（1, 2, 3... 14）の横スライドナビゲーション（看板作成前は2〜14番は選択不可）
+        ・ただの数字（1, 2, 3... 16）の横スライドナビゲーション（看板作成前は2〜16番は選択不可）
       */}
       <StepNavigation
         currentStepNumber={currentStepNumber}
         totalSteps={totalSteps}
         onSelectStepNumber={(num) => {
           if (!activeFolderId && num > 1) return;
+          if (disabledSteps.includes(num)) return;
           setCurrentStepNumber(num);
         }}
         onOpenFullscreen={handleOpenFullscreen}
@@ -242,6 +267,8 @@ export default function App() {
         canRedo={canRedo}
         onDeleteSlide={deleteSlide}
         onDuplicateSlide={duplicateSlide}
+        disabledSteps={disabledSteps}
+        disabledStepReasons={disabledStepReasons}
       />
 
       {/* 

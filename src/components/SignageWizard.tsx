@@ -284,9 +284,12 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
   const stepInfo = WIZARD_STEPS.find((s) => s.step === currentStepNumber) || WIZARD_STEPS[0];
 
   // 自動フォントサイズ計算（表示されているpt数と実際の描画pt数を100%完全一致させる）
-  const isVertical = currentSlide.writingMode === 'vertical';
+  const isTileMode = currentSlide.layoutStyle === 'card-grid';
+  const isPosterMode = currentSlide.layoutStyle === 'poster-hero';
+  const maxMenuItems = isTileMode ? 12 : 6;
+  const isVertical = !isTileMode && currentSlide.writingMode === 'vertical';
   const isLandscape = currentSlide.aspect === '16:9' || currentSlide.aspect === 'horizontal';
-  const visibleCount = (currentSlide.menuItems || []).slice(0, 6).length;
+  const visibleCount = (currentSlide.menuItems || []).slice(0, maxMenuItems).length;
 
   const autoHeadlinePt = calculateAutoHeadlinePt(
     currentSlide.headline || '',
@@ -713,12 +716,15 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                 return true;
               }).map((tmpl) => {
                 const isSelected =
+                  (currentSlide.layoutStyle || 'split-menu') === (tmpl.slide.layoutStyle || 'split-menu') &&
                   (currentSlide.headline || '') === (tmpl.slide.headline || '') &&
                   (currentSlide.shopName || '') === (tmpl.slide.shopName || '') &&
                   (currentSlide.subheadline || '') === (tmpl.slide.subheadline || '') &&
                   (currentSlide.menuItems?.length || 0) === (tmpl.slide.menuItems?.length || 0) &&
                   (currentSlide.footerNote || '') === (tmpl.slide.footerNote || '');
                 const isMediaOnlyTemplate = tmpl.id === 'media-only';
+                const isTileTemplate = tmpl.slide.layoutStyle === 'card-grid';
+                const isPosterTemplate = tmpl.slide.layoutStyle === 'poster-hero';
                 return (
                   <button
                     key={tmpl.id}
@@ -747,6 +753,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                         const lightBgs = ['#ffffff', '#fffbeb', '#faf5ff', '#f0fdf4', '#fdfbf7', '#f8fafc', '#fefce8', '#fff7ed', '#eff6ff', '#f1f5f9', '#fef08a'];
                         const isLight = lightBgs.includes(bg) || grad.includes('#fdf') || grad.includes('#fce') || grad.includes('#ffffff');
                         const cardTextColor = isLight && (!tmpl.slide.textColor || tmpl.slide.textColor === '#ffffff') ? '#0f172a' : (tmpl.slide.textColor || '#ffffff');
+                        const posterPreviewImg = tmpl.slide.subheadlineImageUrl || tmpl.slide.subheadlineImages?.[0];
 
                         return (
                           <div
@@ -764,6 +771,54 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                               <div className="my-auto flex items-center justify-center gap-2.5 opacity-35">
                                 <ImageIcon className="w-5 h-5" />
                                 <Video className="w-5 h-5" />
+                              </div>
+                            ) : isPosterTemplate ? (
+                              <>
+                                {posterPreviewImg && (
+                                  <img
+                                    src={posterPreviewImg}
+                                    alt=""
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                  />
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-black/35" />
+                                <div className="relative z-10 text-[9px] font-bold text-white/95 truncate text-right">
+                                  {tmpl.slide.shopName}
+                                </div>
+                                <div className="relative z-10 mt-auto text-left space-y-0.5">
+                                  <div className="text-xs font-black text-white line-clamp-1 leading-tight drop-shadow">
+                                    {tmpl.slide.headline}
+                                  </div>
+                                  <div className="text-[8px] font-bold text-amber-300 truncate">
+                                    {tmpl.slide.subheadline || ''}
+                                  </div>
+                                </div>
+                              </>
+                            ) : isTileTemplate ? (
+                              <div className="flex flex-col h-full gap-1">
+                                <div className="text-[9px] font-bold opacity-90 truncate border-b border-white/15 pb-0.5">
+                                  {tmpl.slide.shopName}
+                                </div>
+                                <div className="grid grid-cols-2 grid-rows-2 gap-1 flex-1 min-h-0">
+                                  {(tmpl.slide.menuItems || []).slice(0, 4).map((item, idx) => (
+                                    <div
+                                      key={item.id || idx}
+                                      className="relative rounded overflow-hidden bg-black/60 border border-amber-500/40 flex items-end"
+                                    >
+                                      {item.imageUrl && (
+                                        <img
+                                          src={item.imageUrl}
+                                          alt=""
+                                          className="absolute inset-0 w-full h-full object-contain"
+                                        />
+                                      )}
+                                      <div className="relative z-10 w-full bg-gradient-to-t from-black/90 to-transparent px-1 py-0.5 flex items-center justify-between gap-0.5 text-[7px] leading-none">
+                                        <span className="text-white font-bold truncate">{item.name}</span>
+                                        <span className="text-amber-400 font-black shrink-0">{item.price}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             ) : (
                               <>
@@ -783,8 +838,15 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                       })()}
                     </div>
 
-                    <div className="text-center pt-1 border-t border-slate-100">
-                      <span className={`text-xs font-black ${isSelected ? 'text-blue-600' : 'text-slate-500'}`}>
+                    <div className="pt-1.5 border-t border-slate-100 space-y-1 text-center">
+                      {(isTileTemplate || isPosterTemplate) && (
+                        <div className="text-[10px] font-black text-rose-600 leading-tight">
+                          {isTileTemplate
+                            ? '※ 3「縦書き」・10「写真」は選択不可'
+                            : '※ 5「背景」・11「メニュー」は選択不可'}
+                        </div>
+                      )}
+                      <span className={`text-xs font-black block ${isSelected ? 'text-blue-600' : 'text-slate-500'}`}>
                         {isSelected ? '✓ この見本を適用中' : 'この見本にする'}
                       </span>
                     </div>
@@ -863,12 +925,17 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               <span className="block text-base sm:text-lg font-black text-slate-900">
                 2. 看板に書く文字の向きを選んでください：
               </span>
+              {isTileMode && (
+                <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2">
+                  ※ タイル形式を選択中のため、「縦書き」は選択できません（横書き専用）。
+                </p>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   type="button"
                   onClick={() => onUpdateSlide({ writingMode: 'horizontal' })}
                   className={`p-5 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2.5 ${
-                    (currentSlide.writingMode || 'horizontal') === 'horizontal'
+                    isTileMode || (currentSlide.writingMode || 'horizontal') === 'horizontal'
                       ? 'bg-blue-50/80 border-blue-600 ring-4 ring-blue-100 shadow-md scale-[1.01]'
                       : 'bg-white border-slate-200 hover:border-slate-400 hover:bg-slate-50'
                   }`}
@@ -881,7 +948,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                       横書き
                     </h3>
                   </div>
-                  {(currentSlide.writingMode || 'horizontal') === 'horizontal' && (
+                  {(isTileMode || (currentSlide.writingMode || 'horizontal') === 'horizontal') && (
                     <span className="px-3.5 py-1 bg-blue-600 text-white font-black text-xs rounded-full flex items-center gap-1 shadow-xs">
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                       選ばれています
@@ -891,27 +958,39 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
 
                 <button
                   type="button"
-                  onClick={() => onUpdateSlide({ writingMode: 'vertical' })}
-                  className={`p-5 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2.5 ${
-                    currentSlide.writingMode === 'vertical'
-                      ? 'bg-blue-50/80 border-blue-600 ring-4 ring-blue-100 shadow-md scale-[1.01]'
-                      : 'bg-white border-slate-200 hover:border-slate-400 hover:bg-slate-50'
+                  disabled={isTileMode}
+                  onClick={() => {
+                    if (isTileMode) return;
+                    onUpdateSlide({ writingMode: 'vertical' });
+                  }}
+                  className={`p-5 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-2.5 ${
+                    isTileMode
+                      ? 'bg-slate-100 border-slate-200 opacity-45 cursor-not-allowed'
+                      : currentSlide.writingMode === 'vertical'
+                      ? 'bg-blue-50/80 border-blue-600 ring-4 ring-blue-100 shadow-md scale-[1.01] cursor-pointer'
+                      : 'bg-white border-slate-200 hover:border-slate-400 hover:bg-slate-50 cursor-pointer'
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-2xl font-black">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-black ${
+                    isTileMode ? 'bg-slate-200 text-slate-500' : 'bg-amber-100 text-amber-800'
+                  }`}>
                     縦
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-black text-slate-900">
+                    <h3 className={`text-base sm:text-lg font-black ${isTileMode ? 'text-slate-500' : 'text-slate-900'}`}>
                       縦書き
                     </h3>
                   </div>
-                  {currentSlide.writingMode === 'vertical' && (
+                  {isTileMode ? (
+                    <span className="px-3 py-1 bg-slate-300 text-slate-700 font-black text-[11px] rounded-full">
+                      タイル形式では選択不可
+                    </span>
+                  ) : currentSlide.writingMode === 'vertical' ? (
                     <span className="px-3.5 py-1 bg-blue-600 text-white font-black text-xs rounded-full flex items-center gap-1 shadow-xs">
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                       選ばれています
                     </span>
-                  )}
+                  ) : null}
                 </button>
               </div>
             </div>
@@ -965,6 +1044,16 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         {/* ステップ 5: 看板の背景（色・柄・写真・映像）を選んでください */}
         {/* ========================================================= */}
         {currentStepNumber === 5 && (
+          isPosterMode ? (
+            <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
+              <div className="text-base font-black text-slate-700">
+                「ポスター形式」を選択中のため、5番の背景は選択できません
+              </div>
+              <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                ポスター形式は「10」で選んだ看板写真を背景全体に使用します。背景写真を変更したい場合は「10」から設定してください。
+              </p>
+            </div>
+          ) : (
           <div className="space-y-6">
             {/* 1. 写真または映像のアップロード添付（全体像が映るように表示） */}
             <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
@@ -1180,6 +1269,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               </div>
             </div>
           </div>
+          )
         )}
 
         {/* ========================================================= */}
@@ -1398,40 +1488,122 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               </div>
             </div>
 
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
               <span className="block text-sm font-black text-slate-800">
                 文字の並び位置：
               </span>
-              <div className="grid grid-cols-3 gap-2">
-                {(() => {
-                  const isVertical = currentSlide.writingMode === 'vertical';
-                  const alignOptions = [
-                    {
-                      val: 'left',
-                      label: isVertical ? '上寄せ' : '左寄せ',
-                    },
-                    { val: 'center', label: '中央' },
-                    {
-                      val: 'right',
-                      label: isVertical ? '下寄せ' : '右寄せ',
-                    },
-                  ];
-                  return alignOptions.map((a) => (
-                    <button
-                      key={a.val}
-                      type="button"
-                      onClick={() => onUpdateSlide({ headlineAlign: a.val as any })}
-                      className={`py-2 rounded-xl font-bold text-xs sm:text-sm border transition-all cursor-pointer ${
-                        (currentSlide.headlineAlign || 'center') === a.val
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-                      }`}
-                    >
-                      {a.label}
-                    </button>
-                  ));
-                })()}
-              </div>
+              {isPosterMode ? (
+                <div className="space-y-2.5">
+                  <div className="space-y-1">
+                    <span className="block text-xs font-bold text-slate-600">横位置（左右）：</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { val: 'left', label: '左寄せ' },
+                        { val: 'center', label: '中央' },
+                        { val: 'right', label: '右寄せ' },
+                      ].map((a) => {
+                        const isVertical = currentSlide.writingMode === 'vertical';
+                        const activeHorizontal = isVertical
+                          ? (currentSlide.headlineHorizontalAlign || 'center')
+                          : (currentSlide.headlineAlign || 'center');
+                        return (
+                          <button
+                            key={`hl-h-${a.val}`}
+                            type="button"
+                            onClick={() =>
+                              onUpdateSlide(
+                                isVertical
+                                  ? { headlineHorizontalAlign: a.val as 'left' | 'center' | 'right' }
+                                  : { headlineAlign: a.val as 'left' | 'center' | 'right' }
+                              )
+                            }
+                            className={`py-2 rounded-xl font-bold text-xs sm:text-sm border transition-all cursor-pointer ${
+                              activeHorizontal === a.val
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                            }`}
+                          >
+                            {a.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="block text-xs font-bold text-slate-600">縦位置（上下）：</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(() => {
+                        const isVertical = currentSlide.writingMode === 'vertical';
+                        const vOptions = isVertical
+                          ? [
+                              { val: 'left', label: '上寄せ' },
+                              { val: 'center', label: '中央' },
+                              { val: 'right', label: '下寄せ' },
+                            ]
+                          : [
+                              { val: 'top', label: '上寄せ' },
+                              { val: 'center', label: '中央' },
+                              { val: 'bottom', label: '下寄せ' },
+                            ];
+                        const activeVertical = isVertical
+                          ? (currentSlide.headlineAlign || 'center')
+                          : (currentSlide.headlineVerticalAlign || 'bottom');
+                        return vOptions.map((a) => (
+                          <button
+                            key={`hl-v-${a.val}`}
+                            type="button"
+                            onClick={() =>
+                              onUpdateSlide(
+                                isVertical
+                                  ? { headlineAlign: a.val as 'left' | 'center' | 'right' }
+                                  : { headlineVerticalAlign: a.val as 'top' | 'center' | 'bottom' }
+                              )
+                            }
+                            className={`py-2 rounded-xl font-bold text-xs sm:text-sm border transition-all cursor-pointer ${
+                              activeVertical === a.val
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                            }`}
+                          >
+                            {a.label}
+                          </button>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {(() => {
+                    const isVertical = currentSlide.writingMode === 'vertical';
+                    const alignOptions = [
+                      {
+                        val: 'left',
+                        label: isVertical ? '上寄せ' : '左寄せ',
+                      },
+                      { val: 'center', label: '中央' },
+                      {
+                        val: 'right',
+                        label: isVertical ? '下寄せ' : '右寄せ',
+                      },
+                    ];
+                    return alignOptions.map((a) => (
+                      <button
+                        key={a.val}
+                        type="button"
+                        onClick={() => onUpdateSlide({ headlineAlign: a.val as any })}
+                        className={`py-2 rounded-xl font-bold text-xs sm:text-sm border transition-all cursor-pointer ${
+                          (currentSlide.headlineAlign || 'center') === a.val
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        {a.label}
+                      </button>
+                    ));
+                  })()}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1499,40 +1671,122 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
             </div>
 
             {/* 説明文の並び位置 */}
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
               <span className="block text-sm font-black text-slate-800">
                 文字の並び位置：
               </span>
-              <div className="grid grid-cols-3 gap-2">
-                {(() => {
-                  const isVertical = currentSlide.writingMode === 'vertical';
-                  const alignOptions = [
-                    {
-                      val: 'left',
-                      label: isVertical ? '上寄せ' : '左寄せ',
-                    },
-                    { val: 'center', label: '中央' },
-                    {
-                      val: 'right',
-                      label: isVertical ? '下寄せ' : '右寄せ',
-                    },
-                  ];
-                  return alignOptions.map((a) => (
-                    <button
-                      key={a.val}
-                      type="button"
-                      onClick={() => onUpdateSlide({ subheadlineAlign: a.val as any })}
-                      className={`py-2 rounded-xl font-bold text-xs sm:text-sm border transition-all cursor-pointer ${
-                        (currentSlide.subheadlineAlign || 'center') === a.val
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                          : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
-                      }`}
-                    >
-                      {a.label}
-                    </button>
-                  ));
-                })()}
-              </div>
+              {isPosterMode ? (
+                <div className="space-y-2.5">
+                  <div className="space-y-1">
+                    <span className="block text-xs font-bold text-slate-600">横位置（左右）：</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { val: 'left', label: '左寄せ' },
+                        { val: 'center', label: '中央' },
+                        { val: 'right', label: '右寄せ' },
+                      ].map((a) => {
+                        const isVertical = currentSlide.writingMode === 'vertical';
+                        const activeHorizontal = isVertical
+                          ? (currentSlide.subheadlineHorizontalAlign || 'center')
+                          : (currentSlide.subheadlineAlign || 'center');
+                        return (
+                          <button
+                            key={`h-${a.val}`}
+                            type="button"
+                            onClick={() =>
+                              onUpdateSlide(
+                                isVertical
+                                  ? { subheadlineHorizontalAlign: a.val as 'left' | 'center' | 'right' }
+                                  : { subheadlineAlign: a.val as 'left' | 'center' | 'right' }
+                              )
+                            }
+                            className={`py-2 rounded-xl font-bold text-xs sm:text-sm border transition-all cursor-pointer ${
+                              activeHorizontal === a.val
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                            }`}
+                          >
+                            {a.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="block text-xs font-bold text-slate-600">縦位置（上下）：</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(() => {
+                        const isVertical = currentSlide.writingMode === 'vertical';
+                        const vOptions = isVertical
+                          ? [
+                              { val: 'left', label: '上寄せ' },
+                              { val: 'center', label: '中央' },
+                              { val: 'right', label: '下寄せ' },
+                            ]
+                          : [
+                              { val: 'top', label: '上寄せ' },
+                              { val: 'center', label: '中央' },
+                              { val: 'bottom', label: '下寄せ' },
+                            ];
+                        const activeVertical = isVertical
+                          ? (currentSlide.subheadlineAlign || 'center')
+                          : (currentSlide.subheadlineVerticalAlign || 'bottom');
+                        return vOptions.map((a) => (
+                          <button
+                            key={`v-${a.val}`}
+                            type="button"
+                            onClick={() =>
+                              onUpdateSlide(
+                                isVertical
+                                  ? { subheadlineAlign: a.val as 'left' | 'center' | 'right' }
+                                  : { subheadlineVerticalAlign: a.val as 'top' | 'center' | 'bottom' }
+                              )
+                            }
+                            className={`py-2 rounded-xl font-bold text-xs sm:text-sm border transition-all cursor-pointer ${
+                              activeVertical === a.val
+                                ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                            }`}
+                          >
+                            {a.label}
+                          </button>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {(() => {
+                    const isVertical = currentSlide.writingMode === 'vertical';
+                    const alignOptions = [
+                      {
+                        val: 'left',
+                        label: isVertical ? '上寄せ' : '左寄せ',
+                      },
+                      { val: 'center', label: '中央' },
+                      {
+                        val: 'right',
+                        label: isVertical ? '下寄せ' : '右寄せ',
+                      },
+                    ];
+                    return alignOptions.map((a) => (
+                      <button
+                        key={a.val}
+                        type="button"
+                        onClick={() => onUpdateSlide({ subheadlineAlign: a.val as any })}
+                        className={`py-2 rounded-xl font-bold text-xs sm:text-sm border transition-all cursor-pointer ${
+                          (currentSlide.subheadlineAlign || 'center') === a.val
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                        }`}
+                      >
+                        {a.label}
+                      </button>
+                    ));
+                  })()}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
@@ -1554,66 +1808,89 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         {/* ステップ 10: 看板に載せる写真・画像を選んでください */}
         {/* ========================================================= */}
         {currentStepNumber === 10 && (
-          <div className="space-y-6 max-w-xl mx-auto">
-            {currentSlide.subheadlineImages?.[0] ? (
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center space-y-3">
-                <span className="block text-sm font-bold text-slate-600">
-                  現在設定されている写真（全体像が映るように表示されます）：
-                </span>
-                <div className="w-56 h-56 mx-auto rounded-xl overflow-hidden border-2 border-slate-300 shadow-sm bg-white flex items-center justify-center p-2">
-                  <img
-                    src={currentSlide.subheadlineImages[0]}
-                    alt="看板写真"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onUpdateSlide({ subheadlineImages: [], subheadlineImageUrl: '' })}
-                  className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-black transition-colors cursor-pointer inline-flex items-center gap-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>この写真を削除する</span>
-                </button>
+          isTileMode ? (
+            <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
+              <div className="text-base font-black text-slate-700">
+                「タイル形式」を選択中のため、10番の看板写真は選択できません
               </div>
-            ) : (
-              /* ユーザー指示：（文字だけの看板もすっきりしていて人気です）という言葉の削除 */
-              <div className="p-4 bg-slate-50 rounded-2xl text-center text-slate-600 font-bold text-sm border border-dashed border-slate-300">
-                現在写真は入っていません
-              </div>
-            )}
-
-            {/* ユーザー指示：「お手本写真から選ぶ」機能の削除 → スマホ・PCからの選択のみに一本化 */}
-            <div>
-              <label className="p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-600 bg-blue-50/50 hover:bg-blue-50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 text-center">
-                <Upload className="w-8 h-8 text-blue-600" />
-                <span className="text-base sm:text-lg font-black text-slate-900">
-                  写真を選択する
-                </span>
-                <span className="text-xs text-slate-500">
-                  全体像が切れることなく看板に綺麗に収まります
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleBannerFileUpload}
-                  className="hidden"
-                />
-              </label>
+              <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                タイル形式では各商品タイルの画像のみを使用します。商品の写真は「11」の商品リストから設定してください。
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-6 max-w-xl mx-auto">
+              {currentSlide.subheadlineImages?.[0] ? (
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center space-y-3">
+                  <span className="block text-sm font-bold text-slate-600">
+                    {isPosterMode
+                      ? '現在設定されている背景ポスター写真：'
+                      : '現在設定されている写真（全体像が映るように表示されます）：'}
+                  </span>
+                  <div className="w-56 h-56 mx-auto rounded-xl overflow-hidden border-2 border-slate-300 shadow-sm bg-white flex items-center justify-center p-2">
+                    <img
+                      src={currentSlide.subheadlineImages[0]}
+                      alt="看板写真"
+                      className={`w-full h-full ${isPosterMode ? 'object-cover' : 'object-contain'}`}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onUpdateSlide({ subheadlineImages: [], subheadlineImageUrl: '' })}
+                    className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-black transition-colors cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>この写真を削除する</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-50 rounded-2xl text-center text-slate-600 font-bold text-sm border border-dashed border-slate-300">
+                  現在写真は入っていません
+                </div>
+              )}
+
+              <div>
+                <label className="p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-600 bg-blue-50/50 hover:bg-blue-50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 text-center">
+                  <Upload className="w-8 h-8 text-blue-600" />
+                  <span className="text-base sm:text-lg font-black text-slate-900">
+                    写真を選択する
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {isPosterMode
+                      ? '選んだ写真がポスター形式の大きな背景写真として表示されます'
+                      : '全体像が切れることなく看板に綺麗に収まります'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+          )
         )}
 
         {/* ========================================================= */}
         {/* ステップ 11: おすすめ商品やメニューを入れてください */}
         {/* ========================================================= */}
         {currentStepNumber === 11 && (
+          isPosterMode ? (
+            <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
+              <div className="text-base font-black text-slate-700">
+                「ポスター形式」を選択中のため、11番のメニューは選択できません
+              </div>
+              <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                ポスター形式は大きな背景写真（10番）とタイトル・説明文・フッターで構成されます。
+              </p>
+            </div>
+          ) : (
           <div className="space-y-6 max-w-2xl mx-auto">
             <div className="flex items-center justify-between">
               <span className="text-sm font-black text-slate-700">
-                商品リスト（最大6品・現在 {(currentSlide.menuItems || []).length}品）：
+                商品リスト（最大{maxMenuItems}品・現在 {(currentSlide.menuItems || []).length}品）：
               </span>
-              {(currentSlide.menuItems || []).length < 6 && (
+              {(currentSlide.menuItems || []).length < maxMenuItems && (
                 <button
                   type="button"
                   onClick={() => {
@@ -1743,10 +2020,10 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            if ((currentSlide.menuItems || []).length >= 6) {
+                            if ((currentSlide.menuItems || []).length >= maxMenuItems) {
                               onError({
                                 title: '商品登録数の上限',
-                                reason: '画面内に見やすく収めるため、1画面に登録できる商品は最大6品までとなります。',
+                                reason: `画面内に見やすく収めるため、1画面に登録できる商品は最大${maxMenuItems}品までとなります。`,
                                 solution: '不要な商品を削除するか、新しい看板スライドを作成して追加してください。',
                               });
                               return;
@@ -2006,6 +2283,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               </div>
             )}
           </div>
+          )
         )}
 
         {/* ========================================================= */}

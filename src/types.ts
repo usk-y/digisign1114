@@ -136,7 +136,11 @@ export interface SignageSlide {
   textAnimation: TextAnimation;
   textAnimationSpeed?: TextAnimationSpeed;
   headlineAlign?: 'left' | 'center' | 'right';
+  headlineHorizontalAlign?: 'left' | 'center' | 'right';
+  headlineVerticalAlign?: 'top' | 'center' | 'bottom';
   subheadlineAlign?: 'left' | 'center' | 'right';
+  subheadlineHorizontalAlign?: 'left' | 'center' | 'right';
+  subheadlineVerticalAlign?: 'top' | 'center' | 'bottom';
   shopNameAlign?: 'left' | 'center' | 'right';
   layoutStyle: 'center-bold' | 'split-menu' | 'card-grid' | 'poster-hero';
   writingMode?: 'horizontal' | 'vertical';

@@ -111,7 +111,13 @@ export function useSignageFolders(onError: (err: AppError) => void) {
       categoryBadge: baseTmpl.categoryBadge ?? 'おすすめ',
       headline: baseTmpl.headline ?? 'おすすめメニュー\n＆最新のご案内',
       subheadline: baseTmpl.subheadline ?? '当店のおすすめ商品です。\nお気軽にお立ち寄りください。',
-      menuItems: ensureDiverseTagColors((baseTmpl.menuItems || []).slice(0, 6)),
+      subheadlineImages: baseTmpl.layoutStyle === 'card-grid' ? [] : (baseTmpl.subheadlineImages || []),
+      subheadlineImageUrl: baseTmpl.layoutStyle === 'card-grid' ? undefined : (baseTmpl.subheadlineImageUrl || baseTmpl.subheadlineImages?.[0]),
+      menuItems: baseTmpl.layoutStyle === 'poster-hero'
+        ? []
+        : ensureDiverseTagColors(
+            (baseTmpl.menuItems || []).slice(0, baseTmpl.layoutStyle === 'card-grid' ? 12 : 6)
+          ),
       footerNote: baseTmpl.footerNote ?? '営業中 / お気軽にお立ち寄りください',
       showQrCode: baseTmpl.showQrCode ?? true,
       qrCodeUrl: baseTmpl.qrCodeUrl ?? 'https://google.com',
@@ -120,8 +126,8 @@ export function useSignageFolders(onError: (err: AppError) => void) {
       fontOverrides: {},
       textAnimation: baseTmpl.textAnimation || 'slideUp',
       textAnimationSpeed: baseTmpl.textAnimationSpeed || 'normal',
-      writingMode: baseTmpl.writingMode || 'horizontal',
-      layoutStyle: 'split-menu',
+      writingMode: baseTmpl.layoutStyle === 'card-grid' ? 'horizontal' : (baseTmpl.writingMode || 'horizontal'),
+      layoutStyle: baseTmpl.layoutStyle || 'split-menu',
     };
 
     const newFolder: SignageFolder = {

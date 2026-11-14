@@ -34,6 +34,8 @@ interface StepNavigationProps {
   canRedo?: boolean;
   onDeleteSlide: (index: number) => void;
   onDuplicateSlide: (index: number) => void;
+  disabledSteps?: StepNumber[];
+  disabledStepReasons?: Partial<Record<StepNumber, string>>;
 }
 
 export const StepNavigation: React.FC<StepNavigationProps> = ({
@@ -57,6 +59,8 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
   canRedo = false,
   onDeleteSlide,
   onDuplicateSlide,
+  disabledSteps = [],
+  disabledStepReasons = {},
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeBtnRef = useRef<HTMLButtonElement>(null);
@@ -231,7 +235,14 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
             {stepNumbers.map((num) => {
               const isActive = currentStepNumber === num;
               const isPast = num < currentStepNumber;
-              const isDisabled = !isFolderReady && num > 1;
+              const isFolderDisabled = !isFolderReady && num > 1;
+              const isLayoutDisabled = disabledSteps.includes(num);
+              const isDisabled = isFolderDisabled || isLayoutDisabled;
+              const disabledTitle = isFolderDisabled
+                ? 'まず看板の名前を入力して作成してください'
+                : isLayoutDisabled
+                ? disabledStepReasons[num] || `ステップ ${num} は現在の形式では選択できません`
+                : `ステップ ${num} へ移動`;
 
               return (
                 <button
@@ -240,7 +251,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
                   onClick={() => !isDisabled && onSelectStepNumber(num)}
                   disabled={isDisabled}
                   aria-label={`ステップ ${num}`}
-                  title={isDisabled ? 'まず看板の名前を入力して作成してください' : `ステップ ${num} へ移動`}
+                  title={disabledTitle}
                   className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-black text-xs sm:text-base shrink-0 transition-all shadow-xs ${
                     isDisabled
                       ? 'bg-slate-100 text-slate-300 border border-slate-200 cursor-not-allowed opacity-40'

@@ -92,9 +92,14 @@ export function useSignageEditor(onError: (err: AppError) => void) {
     );
   }, [currentSlideIndex, setSlidesWithHistory]);
 
-  // テンプレート適用（現在のwritingModeを保持しつつ、前のテンプレートの背景・模様・色・画像が残らないよう完全リセット）
+  // テンプレート適用（現在のwritingModeを保持しつつ、前のテンプレートの背景・模様・色・画像が残らないよう完全リセット。ただしタイル形式は横書き固定・10番画像なし、ポスター形式は11番メニューなし）
   const applyTemplate = useCallback((templateSlide: Partial<SignageSlide>) => {
-    const existingWritingMode = slides[currentSlideIndex]?.writingMode || 'horizontal';
+    const isTile = templateSlide.layoutStyle === 'card-grid';
+    const isPoster = templateSlide.layoutStyle === 'poster-hero';
+    const existingWritingMode = isTile
+      ? 'horizontal'
+      : (slides[currentSlideIndex]?.writingMode || 'horizontal');
+    const maxItems = isTile ? 12 : 6;
     const bgType = templateSlide.bgType || 'solid';
     const bgColor = templateSlide.bgColor || (bgType === 'gradient' ? '#14532d' : '#1e293b');
     const bgGradient = templateSlide.bgGradient || '';
@@ -118,8 +123,13 @@ export function useSignageEditor(onError: (err: AppError) => void) {
       subheadlinePt: templateSlide.subheadlinePt,
       footerNotePt: templateSlide.footerNotePt,
       shopLogoUrl: templateSlide.shopLogoUrl,
-      subheadlineImageUrl: templateSlide.subheadlineImageUrl || templateSlide.subheadlineImages?.[0],
-      menuItems: ensureDiverseTagColors((templateSlide.menuItems || []).slice(0, 6)),
+      subheadlineImages: isTile ? [] : (templateSlide.subheadlineImages || []),
+      subheadlineImageUrl: isTile ? undefined : (templateSlide.subheadlineImageUrl || templateSlide.subheadlineImages?.[0]),
+      headlineHorizontalAlign: templateSlide.headlineHorizontalAlign,
+      headlineVerticalAlign: templateSlide.headlineVerticalAlign,
+      subheadlineHorizontalAlign: templateSlide.subheadlineHorizontalAlign,
+      subheadlineVerticalAlign: templateSlide.subheadlineVerticalAlign,
+      menuItems: isPoster ? [] : ensureDiverseTagColors((templateSlide.menuItems || []).slice(0, maxItems)),
       fontOverrides: {},
       textColorOverrides: templateSlide.textColorOverrides || {},
     });

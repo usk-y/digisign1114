@@ -111,9 +111,12 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
     return `'${family}', sans-serif`;
   };
 
-  // 背景が白っぽいかどうかの自動判定（白背景での文字不可視化を完全防止）
+  const bannerImageUrl = slide.subheadlineImageUrl || (slide.subheadlineImages && slide.subheadlineImages[0]);
+  const isPosterHeroWithPhoto = slide.layoutStyle === 'poster-hero' && Boolean(bannerImageUrl);
+
+  // 背景が白っぽいかどうかの自動判定（白背景での文字不可視化を完全防止。ポスター写真背景時は暗色グラデーションを乗せるためfalse）
   const isLightBg = (() => {
-    if (slide.bgType === 'video') return false;
+    if (slide.bgType === 'video' || isPosterHeroWithPhoto) return false;
     const bg = (slide.bgColor || '').toLowerCase();
     const grad = (slide.bgGradient || '').toLowerCase();
     const lightBgs = ['#ffffff', '#fffbeb', '#faf5ff', '#f0fdf4', '#fdfbf7', '#f8fafc', '#fefce8', '#fff7ed', '#eff6ff', '#f1f5f9', '#fef08a'];
@@ -174,6 +177,21 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
       const b = parseInt(c.length === 7 ? c.slice(5, 7) : c[3] + c[3], 16);
       if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
         return (r * 299 + g * 587 + b * 114) / 1000 > 175;
+      }
+    }
+    return false;
+  };
+
+  // 暗い色（黒系）判定（タイル下部の黒グラデーション上での文字不可視化防止）
+  const isColorTooDark = (hexColor?: string): boolean => {
+    if (!hexColor) return false;
+    const c = hexColor.toLowerCase().trim();
+    if (c.startsWith('#') && (c.length === 7 || c.length === 4)) {
+      const r = parseInt(c.length === 7 ? c.slice(1, 3) : c[1] + c[1], 16);
+      const g = parseInt(c.length === 7 ? c.slice(3, 5) : c[2] + c[2], 16);
+      const b = parseInt(c.length === 7 ? c.slice(5, 7) : c[3] + c[3], 16);
+      if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+        return (r * 299 + g * 587 + b * 114) / 1000 < 95;
       }
     }
     return false;
@@ -339,14 +357,15 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
   const badgeText = slide.categoryBadge || '';
   const isBadgeTall = badgeText.length > 9 || badgeText.includes('\n');
 
-  // メニュー商品数（最大6品）に応じた動的レイアウト設定
+  // メニュー商品数（通常最大6品・タイル形式最大12品）に応じた動的レイアウト設定
+  const isTileMode = slide.layoutStyle === 'card-grid';
   const itemCount = slide.menuItems?.length || 0;
   const isDenseMenu = itemCount >= 5;
   const isMediumMenu = itemCount === 4;
 
-  const isVertical = slide.writingMode === 'vertical';
+  const isVertical = !isTileMode && slide.writingMode === 'vertical';
   const rawItems = slide.menuItems || [];
-  const visibleItems = rawItems.slice(0, 6);
+  const visibleItems = rawItems.slice(0, isTileMode ? 12 : 6);
   const visibleCount = visibleItems.length;
 
   // ユーザー指示「文字類は全て、自分でポイント数を入力出来るように」
@@ -367,7 +386,6 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
   const isLandscape = slide.aspect === '16:9' || slide.aspect === 'horizontal';
   const baseWidth = isLandscape ? 960 : 540;
   const baseHeight = isLandscape ? 540 : 960;
-  const bannerImageUrl = slide.subheadlineImageUrl || (slide.subheadlineImages && slide.subheadlineImages[0]);
 
   const DEFAULT_TAG_COLORS = ['#ef4444', '#2563eb', '#16a34a', '#d97706', '#9333ea', '#ea580c'];
 
@@ -451,115 +469,122 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
     );
   };
 
+  // 縦書き大見出し・サブコピー個別レンダー
+  const renderVerticalHeadline = (keyPrefix: string, extraClass = '') =>
+    slide.headline ? (
+      <div
+        onClick={() => onSelectTextTarget?.('headline')}
+        className={`p-0.5 sm:p-1 min-w-fit shrink-0 max-h-full h-full flex flex-col items-center ${
+          slide.headlineAlign === 'left'
+            ? 'justify-start'
+            : slide.headlineAlign === 'right'
+            ? 'justify-end'
+            : 'justify-center'
+        } mr-0 ${extraClass} ${getSelectableClass('headline')}`}
+        title="クリックして大見出しの書体を変更"
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${keyPrefix}-headline-${slide.id || ''}-${slide.headline || ''}-${slide.subheadline || ''}-${slide.textAnimation || 'none'}-${slide.textAnimationSpeed || 'normal'}`}
+            variants={getTextAnimationVariants()}
+            initial="initial"
+            animate="animate"
+            className={`h-full min-w-fit flex flex-col items-center ${
+              slide.headlineAlign === 'left'
+                ? 'justify-start'
+                : slide.headlineAlign === 'right'
+                ? 'justify-end'
+                : 'justify-center'
+            }`}
+          >
+            <h1
+              className="font-black tracking-tight drop-shadow-sm whitespace-pre-line break-words"
+              style={{
+                fontFamily: getTargetFont('headline'),
+                color: getTargetTextColor('headline'),
+                fontSize: `${effectiveHeadlinePt}px`,
+                lineHeight: 1.35,
+                maxWidth: '100%',
+                textAlign: slide.headlineAlign === 'left' ? 'start' : slide.headlineAlign === 'right' ? 'end' : 'center',
+                writingMode: 'vertical-rl',
+                textOrientation: 'upright',
+                maxHeight: '100%',
+                textShadow:
+                  slide.textAnimation === 'neonFlicker'
+                    ? `0 0 16px ${slide.accentColor}, 0 0 32px ${slide.accentColor}`
+                    : isPosterHeroWithPhoto
+                    ? '0 3px 14px rgba(0,0,0,0.85)'
+                    : 'none',
+              }}
+            >
+              {slide.headline}
+            </h1>
+          </motion.div>
+        </AnimatePresence>
+        {selectedTextTarget === 'headline' && (
+          <div className="inline-flex items-center gap-1 text-[10px] bg-amber-400 text-slate-950 font-bold px-1.5 py-0.5 rounded-full mt-1 shrink-0 whitespace-nowrap">
+            <Type className="w-3 h-3" /> 見出し変更中
+          </div>
+        )}
+      </div>
+    ) : null;
+
+  const renderVerticalSubheadline = (keyPrefix: string, extraClass = '') =>
+    slide.subheadline ? (
+      <div
+        onClick={() => onSelectTextTarget?.('subheadline')}
+        className={`p-0.5 sm:p-1 min-w-fit shrink-0 max-h-full h-full flex flex-col items-center ${
+          slide.subheadlineAlign === 'left'
+            ? 'justify-start'
+            : slide.subheadlineAlign === 'right'
+            ? 'justify-end'
+            : 'justify-center'
+        } ${extraClass} ${getSelectableClass('subheadline')}`}
+        title="クリックして説明文の書体を変更"
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${keyPrefix}-sub-${slide.id || ''}-${slide.headline || ''}-${slide.subheadline || ''}-${slide.textAnimation || 'none'}`}
+            variants={getTextAnimationVariants()}
+            initial="initial"
+            animate="animate"
+            className={`h-full min-w-fit flex flex-col items-center ${
+              slide.subheadlineAlign === 'left'
+                ? 'justify-start'
+                : slide.subheadlineAlign === 'right'
+                ? 'justify-end'
+                : 'justify-center'
+            }`}
+          >
+            <p
+              className="font-medium opacity-85 whitespace-pre-line break-words w-full"
+              style={{
+                fontFamily: getTargetFont('subheadline'),
+                color: getTargetTextColor('subheadline'),
+                fontSize: `${effectiveSubheadlinePt}px`,
+                lineHeight: 1.35,
+                textAlign: slide.subheadlineAlign === 'left' ? 'start' : slide.subheadlineAlign === 'right' ? 'end' : 'center',
+                writingMode: 'vertical-rl',
+                textOrientation: 'upright',
+                maxHeight: '100%',
+                textShadow: isPosterHeroWithPhoto ? '0 2px 10px rgba(0,0,0,0.85)' : 'none',
+              }}
+            >
+              {slide.subheadline}
+            </p>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    ) : null;
+
   // 縦書き大見出し・サブコピー共通レンダー
   const renderVerticalCopyPair = (keyPrefix: string, gapPx: number) => (
     <div
       className="flex-1 min-h-0 w-full flex flex-row-reverse items-stretch justify-center h-full max-h-full overflow-hidden"
       style={{ gap: `${gapPx}px` }}
     >
-      {/* 大見出し（右） */}
-      {slide.headline && (
-        <div
-          onClick={() => onSelectTextTarget?.('headline')}
-          className={`p-0.5 sm:p-1 min-w-fit shrink-0 max-h-full h-full flex flex-col items-center ${
-            slide.headlineAlign === 'left'
-              ? 'justify-start'
-              : slide.headlineAlign === 'right'
-              ? 'justify-end'
-              : 'justify-center'
-          } mr-0 ${getSelectableClass('headline')}`}
-          title="クリックして大見出しの書体を変更"
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${keyPrefix}-headline-${slide.id || ''}-${slide.headline || ''}-${slide.subheadline || ''}-${slide.textAnimation || 'none'}-${slide.textAnimationSpeed || 'normal'}`}
-              variants={getTextAnimationVariants()}
-              initial="initial"
-              animate="animate"
-              className={`h-full min-w-fit flex flex-col items-center ${
-                slide.headlineAlign === 'left'
-                  ? 'justify-start'
-                  : slide.headlineAlign === 'right'
-                  ? 'justify-end'
-                  : 'justify-center'
-              }`}
-            >
-              <h1
-                className="font-black tracking-tight drop-shadow-sm whitespace-pre-line break-words"
-                style={{
-                  fontFamily: getTargetFont('headline'),
-                  color: getTargetTextColor('headline'),
-                  fontSize: `${effectiveHeadlinePt}px`,
-                  lineHeight: 1.35,
-                  maxWidth: '100%',
-                  textAlign: slide.headlineAlign === 'left' ? 'start' : slide.headlineAlign === 'right' ? 'end' : 'center',
-                  writingMode: 'vertical-rl',
-                  textOrientation: 'upright',
-                  maxHeight: '100%',
-                  textShadow:
-                    slide.textAnimation === 'neonFlicker'
-                      ? `0 0 16px ${slide.accentColor}, 0 0 32px ${slide.accentColor}`
-                      : 'none',
-                }}
-              >
-                {slide.headline}
-              </h1>
-            </motion.div>
-          </AnimatePresence>
-          {selectedTextTarget === 'headline' && (
-            <div className="inline-flex items-center gap-1 text-[10px] bg-amber-400 text-slate-950 font-bold px-1.5 py-0.5 rounded-full mt-1 shrink-0 whitespace-nowrap">
-              <Type className="w-3 h-3" /> 見出し変更中
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* サブコピー（大見出しの左） */}
-      {slide.subheadline && (
-        <div
-          onClick={() => onSelectTextTarget?.('subheadline')}
-          className={`p-0.5 sm:p-1 min-w-fit shrink-0 max-h-full h-full flex flex-col items-center ${
-            slide.subheadlineAlign === 'left'
-              ? 'justify-start'
-              : slide.subheadlineAlign === 'right'
-              ? 'justify-end'
-              : 'justify-center'
-          } ${getSelectableClass('subheadline')}`}
-          title="クリックして説明文の書体を変更"
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${keyPrefix}-sub-${slide.id || ''}-${slide.headline || ''}-${slide.subheadline || ''}-${slide.textAnimation || 'none'}`}
-              variants={getTextAnimationVariants()}
-              initial="initial"
-              animate="animate"
-              className={`h-full min-w-fit flex flex-col items-center ${
-                slide.subheadlineAlign === 'left'
-                  ? 'justify-start'
-                  : slide.subheadlineAlign === 'right'
-                  ? 'justify-end'
-                  : 'justify-center'
-              }`}
-            >
-              <p
-                className="font-medium opacity-85 whitespace-pre-line break-words w-full"
-                style={{
-                  fontFamily: getTargetFont('subheadline'),
-                  color: getTargetTextColor('subheadline'),
-                  fontSize: `${effectiveSubheadlinePt}px`,
-                  lineHeight: 1.35,
-                  textAlign: slide.subheadlineAlign === 'left' ? 'start' : slide.subheadlineAlign === 'right' ? 'end' : 'center',
-                  writingMode: 'vertical-rl',
-                  textOrientation: 'upright',
-                  maxHeight: '100%',
-                }}
-              >
-                {slide.subheadline}
-              </p>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      )}
+      {renderVerticalHeadline(keyPrefix)}
+      {renderVerticalSubheadline(keyPrefix)}
     </div>
   );
 
@@ -583,37 +608,59 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
         }}
         className={`absolute top-0 left-0 overflow-hidden flex flex-col ${getFrameClasses()}`}
       >
-        {/* 背景動画レイヤー（全体像が映るようにcontain） */}
-        {slide.bgType === 'video' && slide.bgVideoUrl && (
-          <div className="absolute inset-0 z-0 bg-black flex items-center justify-center">
-            <video
-              src={slide.bgVideoUrl}
-              autoPlay
-              loop
-              muted
-              playsInline
-              onError={(e) => {
-                const parent = e.currentTarget.parentElement;
-                if (parent) parent.style.display = 'none';
+        {/* 背景レイヤー：ポスター形式時は10番の写真を大きな背景に配置 */}
+        {isPosterHeroWithPhoto ? (
+          <div className="absolute inset-0 z-0 overflow-hidden bg-slate-950">
+            <img
+              src={bannerImageUrl}
+              alt="ポスター背景写真"
+              referrerPolicy="no-referrer"
+              onError={handleImageError}
+              className="w-full h-full object-cover object-center"
+            />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.08) 28%, rgba(0,0,0,0.18) 52%, rgba(0,0,0,0.82) 82%, rgba(0,0,0,0.92) 100%)',
               }}
-              className="w-full h-full object-contain pointer-events-none"
             />
           </div>
-        )}
+        ) : (
+          <>
+            {/* 背景動画レイヤー（全体像が映るようにcontain） */}
+            {slide.bgType === 'video' && slide.bgVideoUrl && (
+              <div className="absolute inset-0 z-0 bg-black flex items-center justify-center">
+                <video
+                  src={slide.bgVideoUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  onError={(e) => {
+                    const parent = e.currentTarget.parentElement;
+                    if (parent) parent.style.display = 'none';
+                  }}
+                  className="w-full h-full object-contain pointer-events-none"
+                />
+              </div>
+            )}
 
-        {/* 背景色・グラデーション・画像レイヤー */}
-        {slide.bgType !== 'video' && (
-          <div
-            className="absolute inset-0 z-0 transition-colors duration-500"
-            style={getBackgroundStyle()}
-          />
-        )}
+            {/* 背景色・グラデーション・画像レイヤー */}
+            {slide.bgType !== 'video' && (
+              <div
+                className="absolute inset-0 z-0 transition-colors duration-500"
+                style={getBackgroundStyle()}
+              />
+            )}
 
-        {/* パターン模様オーバーレイ */}
-        {slide.bgPattern && slide.bgPattern !== 'none' && slide.bgType !== 'video' && (
-          <div
-            className={`absolute inset-0 z-0 pointer-events-none ${getPatternClass()}`}
-          />
+            {/* パターン模様オーバーレイ */}
+            {slide.bgPattern && slide.bgPattern !== 'none' && slide.bgType !== 'video' && (
+              <div
+                className={`absolute inset-0 z-0 pointer-events-none ${getPatternClass()}`}
+              />
+            )}
+          </>
         )}
 
         {/* コンテンツエリア */}
@@ -743,8 +790,434 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
             </div>
           )}
 
-          {/* 縦書き時と横書き時のレイアウト分岐 */}
-          {slide.writingMode === 'vertical' ? (
+          {/* タイル形式（card-grid）・ポスター形式（poster-hero）・縦書き・横書きのレイアウト分岐 */}
+          {slide.layoutStyle === 'card-grid' ? (
+            <div className="flex-1 flex flex-col gap-2 min-h-0 h-full overflow-hidden py-0.5">
+              {/* タイトル・説明文（タイル形式では10番の写真画像は非表示・選択不可） */}
+              {(slide.headline || slide.subheadline) && (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={`tile-headline-${slide.id || ''}-${slide.headline || ''}-${slide.textAnimation || 'none'}-${slide.textAnimationSpeed || 'normal'}`}
+                    variants={getTextAnimationVariants()}
+                    initial="initial"
+                    animate="animate"
+                    className="shrink-0 flex flex-col justify-center px-2 overflow-hidden"
+                  >
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        {slide.headline && (
+                          <div
+                            onClick={() => onSelectTextTarget?.('headline')}
+                            className={`w-full p-0.5 ${getSelectableClass('headline')}`}
+                            style={{ textAlign: slide.headlineAlign || 'center' }}
+                            title="クリックして大見出しの書体を変更"
+                          >
+                            <h1
+                              className="font-black tracking-tight drop-shadow-sm whitespace-pre-line break-words w-full block"
+                              style={{
+                                fontFamily: getTargetFont('headline'),
+                                color: getTargetTextColor('headline'),
+                                fontSize: `${
+                                  slide.headlinePt && slide.headlinePt > 0
+                                    ? slide.headlinePt
+                                    : Math.min(effectiveHeadlinePt, visibleCount >= 7 ? 16 : visibleCount >= 5 ? 18 : 22)
+                                }px`,
+                                lineHeight: 1.18,
+                                textAlign: slide.headlineAlign || 'center',
+                              }}
+                            >
+                              {slide.headline}
+                            </h1>
+                          </div>
+                        )}
+
+                        {slide.subheadline && (
+                          <div
+                            onClick={() => onSelectTextTarget?.('subheadline')}
+                            className={`w-full p-0.5 ${getSelectableClass('subheadline')}`}
+                            style={{ textAlign: slide.subheadlineAlign || 'center' }}
+                            title="クリックして説明文の書体を変更"
+                          >
+                            <p
+                              className="font-medium opacity-85 whitespace-pre-line break-words w-full block line-clamp-2"
+                              style={{
+                                fontFamily: getTargetFont('subheadline'),
+                                color: getTargetTextColor('subheadline'),
+                                fontSize: `${
+                                  slide.subheadlinePt && slide.subheadlinePt > 0
+                                    ? slide.subheadlinePt
+                                    : Math.min(effectiveSubheadlinePt, 13)
+                                }px`,
+                                lineHeight: 1.25,
+                                textAlign: slide.subheadlineAlign || 'center',
+                              }}
+                            >
+                              {slide.subheadline}
+                            </p>
+                          </div>
+                        )}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              )}
+
+              {/* タイルメニューグリッド（最大横4列・縦3行、最大12商品対応） */}
+              {visibleCount > 0 && (() => {
+                const tileGridClass =
+                  visibleCount === 1
+                    ? 'grid-cols-1 grid-rows-1'
+                    : visibleCount === 2
+                    ? isLandscape
+                      ? 'grid-cols-2 grid-rows-1'
+                      : 'grid-cols-1 grid-rows-2'
+                    : visibleCount <= 4
+                    ? 'grid-cols-2 grid-rows-2'
+                    : visibleCount <= 6
+                    ? isLandscape
+                      ? 'grid-cols-3 grid-rows-2'
+                      : 'grid-cols-2 grid-rows-3'
+                    : visibleCount <= 8
+                    ? 'grid-cols-4 grid-rows-2'
+                    : !isLandscape && visibleCount === 10
+                    ? 'grid-cols-3 grid-rows-5'
+                    : 'grid-cols-4 grid-rows-3';
+
+                const hasHeroFirstTile =
+                  visibleCount === 3 ||
+                  visibleCount === 5 ||
+                  visibleCount === 7 ||
+                  visibleCount === 9 ||
+                  visibleCount === 10 ||
+                  visibleCount === 11;
+
+                const explicitMenuColor = slide.textColorOverrides?.menu;
+                const tileNameColor =
+                  explicitMenuColor && !isColorTooDark(explicitMenuColor) ? explicitMenuColor : '#ffffff';
+                const tileDescColor =
+                  explicitMenuColor && !isColorTooDark(explicitMenuColor) ? explicitMenuColor : 'rgba(255,255,255,0.82)';
+                const tilePriceColor =
+                  slide.accentColor && !isColorTooDark(slide.accentColor) ? slide.accentColor : '#fbbf24';
+                const isDenseTile = visibleCount >= 7;
+                const isCompactLandscapeTile = isLandscape && visibleCount >= 5;
+
+                return (
+                  <div
+                    onClick={() => onSelectTextTarget?.('menu')}
+                    className={`flex-1 min-h-0 grid ${tileGridClass} ${
+                      isDenseTile ? 'gap-1.5' : 'gap-2.5'
+                    } px-0.5 py-0.5 items-stretch ${getSelectableClass('menu')}`}
+                    style={{ fontFamily: getTargetFont('menu') }}
+                    title="クリックしてメニュー商品の書体を変更"
+                  >
+                    {visibleItems.map((item, idx) => {
+                      const isHeroTile = idx === 0 && hasHeroFirstTile;
+                      const isPortraitWideHero =
+                        !isLandscape && (visibleCount === 7 || visibleCount === 10 || visibleCount === 11);
+                      const heroSpanClass = isHeroTile
+                        ? visibleCount === 9
+                          ? 'col-span-2 row-span-2'
+                          : isPortraitWideHero
+                          ? visibleCount === 10
+                            ? 'col-span-2 row-span-3'
+                            : 'col-span-2'
+                          : visibleCount === 10
+                          ? 'row-span-3'
+                          : 'row-span-2'
+                        : '';
+
+                      const tileNamePt =
+                        item.namePt ||
+                        slide.menuItemNamePt ||
+                        (isHeroTile
+                          ? visibleCount <= 5
+                            ? isLandscape
+                              ? 18
+                              : 19
+                            : visibleCount === 9 || isPortraitWideHero
+                            ? 16
+                            : 15
+                          : visibleCount <= 2
+                          ? 20
+                          : visibleCount <= 4
+                          ? isLandscape
+                            ? 14
+                            : 15
+                          : visibleCount <= 6
+                          ? isLandscape
+                            ? 12
+                            : 13
+                          : isLandscape || visibleCount === 10
+                          ? 11
+                          : 10);
+                      const tileDescPt =
+                        item.descPt ||
+                        slide.menuItemDescPt ||
+                        (isHeroTile ? 11 : visibleCount <= 2 ? 12 : visibleCount <= 6 ? 10 : 9);
+                      const tilePricePt =
+                        item.pricePt ||
+                        slide.menuItemPricePt ||
+                        (isHeroTile
+                          ? visibleCount <= 5
+                            ? 20
+                            : visibleCount === 9 || isPortraitWideHero
+                            ? 18
+                            : 16
+                          : visibleCount <= 2
+                          ? 22
+                          : visibleCount <= 4
+                          ? isLandscape
+                            ? 16
+                            : 17
+                          : visibleCount <= 6
+                          ? isLandscape
+                            ? 13
+                            : 14
+                          : isLandscape || visibleCount === 10
+                          ? 12
+                          : 11);
+                      const highlightLabel =
+                        item.highlightBadge && item.highlightBadge !== 'なし' && item.highlightBadge !== ''
+                          ? item.highlightBadge
+                          : item.featured
+                          ? 'おすすめ'
+                          : '';
+                      const isHighlighted = Boolean(highlightLabel);
+
+                      return (
+                        <motion.div
+                          key={item.id || idx}
+                          initial={{ opacity: 0, scale: 0.98 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 0.03 + idx * 0.03, duration: 0.16 }}
+                          className={`relative w-full h-full min-h-0 rounded-xl overflow-hidden border transition-all ${heroSpanClass} ${
+                            isHighlighted
+                              ? 'ring-2 ring-amber-400 border-amber-400 shadow-lg'
+                              : 'shadow-md'
+                          }`}
+                          style={{
+                            borderColor: isHighlighted ? '#f59e0b' : `${tilePriceColor}55`,
+                            backgroundColor: '#0c0a09',
+                          }}
+                        >
+                          {/* 1. 画像レイヤー：枠全体まで表示しつつ全体表示（object-contain） */}
+                          <div className="absolute inset-0 z-0 bg-slate-950/90 flex items-center justify-center">
+                            {item.imageUrl && (
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                referrerPolicy="no-referrer"
+                                onError={handleImageError}
+                                className="w-full h-full object-contain"
+                              />
+                            )}
+                          </div>
+
+                          {/* 2. 上部タグ＆おすすめ枠バッジレイヤー */}
+                          {item.tag && (
+                            <div
+                              className={`absolute z-20 rounded font-black text-white shadow-md tracking-wider whitespace-nowrap leading-tight ${
+                                isDenseTile && !isHeroTile
+                                  ? 'top-1.5 left-1.5 px-1.5 py-0.5 text-[8px] sm:text-[9px]'
+                                  : 'top-2 left-2 px-2 py-0.5 text-[10px] sm:text-[11px]'
+                              }`}
+                              style={{
+                                backgroundColor: item.tagColor || DEFAULT_TAG_COLORS[idx % 6],
+                              }}
+                            >
+                              {item.tag}
+                            </div>
+                          )}
+
+                          {highlightLabel && (
+                            <div
+                              className={`absolute z-20 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black rounded-full shadow-md leading-tight whitespace-nowrap border border-amber-200 ${
+                                isDenseTile && !isHeroTile
+                                  ? 'top-1.5 right-1.5 px-1.5 py-0.5 text-[8px] sm:text-[9px]'
+                                  : 'top-2 right-2 px-2.5 py-0.5 text-[10px] sm:text-[11px]'
+                              }`}
+                            >
+                              {highlightLabel}
+                            </div>
+                          )}
+
+                          {/* 3. 最下部テキスト・価格オーバーレイレイヤー（画像の上に表示） */}
+                          <div
+                            className={`absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/95 via-black/75 to-transparent ${
+                              isDenseTile && !isHeroTile
+                                ? 'pt-4 pb-1.5 px-1.5 gap-x-1.5 gap-y-0.5'
+                                : isCompactLandscapeTile
+                                ? 'pt-5 pb-1.5 px-2 gap-2'
+                                : 'pt-8 pb-2 px-2.5 gap-2'
+                            } flex flex-wrap items-end justify-between`}
+                          >
+                            <div className="min-w-[60%] flex-1 flex flex-col items-start text-left">
+                              <span
+                                className="font-bold break-words leading-tight whitespace-pre-line line-clamp-2 drop-shadow-sm"
+                                style={{
+                                  fontSize: `${tileNamePt}px`,
+                                  color: tileNameColor,
+                                }}
+                              >
+                                {item.name || '商品名未入力'}
+                              </span>
+                              {item.description && (
+                                <p
+                                  className="opacity-85 break-words leading-tight whitespace-pre-line mt-0.5 line-clamp-1"
+                                  style={{
+                                    fontSize: `${tileDescPt}px`,
+                                    color: tileDescColor,
+                                  }}
+                                >
+                                  {item.description}
+                                </p>
+                              )}
+                            </div>
+
+                            {item.price && item.price.trim().length > 0 && (
+                              <div
+                                className={`ml-auto shrink-0 rounded-md flex items-center justify-center ${
+                                  item.priceBgColor && item.priceBgColor !== 'transparent'
+                                    ? 'px-1.5 py-0.5 border border-white/20 shadow-xs'
+                                    : ''
+                                }`}
+                                style={{
+                                  backgroundColor:
+                                    item.priceBgColor && item.priceBgColor !== 'transparent'
+                                      ? item.priceBgColor
+                                      : 'transparent',
+                                }}
+                              >
+                                <span
+                                  className="font-black tracking-tight whitespace-nowrap leading-none drop-shadow-sm"
+                                  style={{
+                                    fontSize: `${tilePricePt}px`,
+                                    color: tilePriceColor,
+                                  }}
+                                >
+                                  {item.price}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          ) : slide.layoutStyle === 'poster-hero' ? (
+            /* ポスター形式（10番の大きな写真を背景に表示し、メニュー11番は使わずタイトル・説明を大胆に配置） */
+            slide.writingMode === 'vertical' ? (
+              <div className="relative flex-1 min-h-0 w-full h-full overflow-hidden py-2 px-2">
+                {(['left', 'center', 'right'] as const).map((slot) => {
+                  const headlineH = slide.headlineHorizontalAlign || 'center';
+                  const subheadlineH = slide.subheadlineHorizontalAlign || 'center';
+                  const hasHeadline = Boolean(slide.headline && headlineH === slot);
+                  const hasSubheadline = Boolean(slide.subheadline && subheadlineH === slot);
+                  if (!hasHeadline && !hasSubheadline) return null;
+                  const gapPx = Math.max(14, Math.round((effectiveHeadlinePt || 30) * 0.6));
+                  const justifyClass =
+                    slot === 'left' ? 'justify-end' : slot === 'right' ? 'justify-start' : 'justify-center';
+
+                  return (
+                    <div
+                      key={slot}
+                      className={`absolute inset-0 flex flex-row-reverse items-stretch pointer-events-none px-1 ${justifyClass}`}
+                      style={{ gap: `${gapPx}px` }}
+                    >
+                      {hasHeadline && renderVerticalHeadline('poster-v', 'pointer-events-auto')}
+                      {hasSubheadline && renderVerticalSubheadline('poster-v', 'pointer-events-auto')}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="relative flex-1 min-h-0 w-full h-full overflow-hidden py-2 sm:py-3 px-1 sm:px-2">
+                {(['top', 'center', 'bottom'] as const).map((vSlot) => {
+                  const headlineV = slide.headlineVerticalAlign || 'bottom';
+                  const subheadlineV = slide.subheadlineVerticalAlign || 'bottom';
+                  const hasHeadline = Boolean(slide.headline && headlineV === vSlot);
+                  const hasSubheadline = Boolean(slide.subheadline && subheadlineV === vSlot);
+                  if (!hasHeadline && !hasSubheadline) return null;
+                  const vJustifyClass =
+                    vSlot === 'top' ? 'justify-start' : vSlot === 'center' ? 'justify-center' : 'justify-end';
+
+                  return (
+                    <div
+                      key={vSlot}
+                      className={`absolute inset-0 flex flex-col ${vJustifyClass} pointer-events-none py-2 sm:py-3 px-1 sm:px-2`}
+                    >
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={`poster-h-${vSlot}-${slide.id || ''}-${slide.headline || ''}-${slide.subheadline || ''}-${slide.textAnimation || 'none'}-${slide.textAnimationSpeed || 'normal'}`}
+                          variants={getTextAnimationVariants()}
+                          initial="initial"
+                          animate="animate"
+                          className="w-full flex flex-col gap-2"
+                        >
+                          {hasHeadline && (
+                            <div
+                              onClick={() => onSelectTextTarget?.('headline')}
+                              className={`w-full p-1 pointer-events-auto ${getSelectableClass('headline')}`}
+                              style={{ textAlign: slide.headlineAlign || 'center' }}
+                              title="クリックして大見出しの書体を変更"
+                            >
+                              <h1
+                                className="font-black tracking-tight whitespace-pre-line break-words w-full block"
+                                style={{
+                                  fontFamily: getTargetFont('headline'),
+                                  color: getTargetTextColor('headline'),
+                                  fontSize: `${effectiveHeadlinePt}px`,
+                                  lineHeight: 1.12,
+                                  textAlign: slide.headlineAlign || 'center',
+                                  textShadow:
+                                    slide.textAnimation === 'neonFlicker'
+                                      ? `0 0 16px ${slide.accentColor}, 0 0 32px ${slide.accentColor}`
+                                      : isPosterHeroWithPhoto
+                                      ? '0 4px 18px rgba(0,0,0,0.8), 0 1px 4px rgba(0,0,0,0.9)'
+                                      : 'none',
+                                }}
+                              >
+                                {slide.headline}
+                              </h1>
+                              {selectedTextTarget === 'headline' && (
+                                <div className="inline-flex items-center gap-1 text-[11px] bg-amber-400 text-slate-950 font-bold px-2 py-0.5 rounded-full mt-1">
+                                  <Type className="w-3 h-3" /> 見出しの書体を変更中
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {hasSubheadline && (
+                            <div
+                              onClick={() => onSelectTextTarget?.('subheadline')}
+                              className={`w-full p-1 pointer-events-auto ${getSelectableClass('subheadline')}`}
+                              style={{ textAlign: slide.subheadlineAlign || 'center' }}
+                              title="クリックして説明文の書体を変更"
+                            >
+                              <p
+                                className="font-bold whitespace-pre-line break-words w-full block"
+                                style={{
+                                  fontFamily: getTargetFont('subheadline'),
+                                  color: getTargetTextColor('subheadline'),
+                                  fontSize: `${effectiveSubheadlinePt}px`,
+                                  lineHeight: 1.28,
+                                  textAlign: slide.subheadlineAlign || 'center',
+                                  textShadow: isPosterHeroWithPhoto ? '0 2px 10px rgba(0,0,0,0.85)' : 'none',
+                                }}
+                              >
+                                {slide.subheadline}
+                              </p>
+                            </div>
+                          )}
+                        </motion.div>
+                      </AnimatePresence>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          ) : slide.writingMode === 'vertical' ? (
             <div className="flex-1 flex flex-row items-stretch justify-between gap-3 min-h-0 h-full py-0.5 overflow-hidden">
               {/* 1. 商品エリア */}
               <div className={`${isLandscape ? 'w-[65%] min-w-0' : 'w-[50%] min-w-0'} flex flex-col justify-between gap-2 min-h-0 h-full`}>
