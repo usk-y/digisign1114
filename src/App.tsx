@@ -186,19 +186,46 @@ export default function App() {
     setIsFullscreen(true);
   };
 
-  // 選択中の形式に応じて利用不可のステップ（タイル形式：8番不可、ポスター形式：5・11番不可）
+  // 選択中の形式に応じて利用不可のステップ
   const disabledSteps: StepNumber[] =
     currentSlide?.layoutStyle === 'card-grid'
       ? [8]
       : currentSlide?.layoutStyle === 'poster-hero'
       ? [5, 11]
+      : currentSlide?.layoutStyle === 'media-only'
+      ? [8, 9, 10, 11, 14]
       : [];
 
   const disabledStepReasons: Partial<Record<StepNumber, string>> = {
     5: 'ポスター形式では「5. 背景」は選択できません',
-    8: 'タイル形式では「8. 写真・画像」は選択できません',
-    11: 'ポスター形式では「11. メニュー」は選択できません',
+    8: 'タイル形式・背景画像専用では「8. 写真・画像」は選択できません',
+    9: '背景画像・映像専用では「9. タイトル」は選択できません',
+    10: '背景画像・映像専用では「10. 説明やキャッチフレーズ」は選択できません',
+    11: 'ポスター形式・背景画像専用では「11. メニュー」は選択できません',
+    14: '背景画像・映像専用では「14. 文字のアニメーション」は選択できません',
   };
+
+  const wizardContainerRef = useRef<HTMLDivElement>(null);
+
+  // 画面および編集エリアの最上部へ自動スクロール
+  const scrollToTop = (behavior: ScrollBehavior = 'smooth') => {
+    window.scrollTo({ top: 0, behavior });
+    document.documentElement.scrollTo({ top: 0, behavior });
+    document.body.scrollTo({ top: 0, behavior });
+    if (wizardContainerRef.current) {
+      wizardContainerRef.current.scrollTo({ top: 0, behavior });
+    }
+  };
+
+  // ステップが切り替わったら確実に画面最上部に自動遷移
+  useEffect(() => {
+    scrollToTop('smooth');
+    // レンダリング遅延後にも再度確実に最上部へ
+    const timer = setTimeout(() => {
+      scrollToTop('smooth');
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [currentStepNumber]);
 
   // 前のページへ戻る（無効ステップは自動スキップ）
   const handlePrevStep = () => {
@@ -209,7 +236,7 @@ export default function App() {
       }
       return Math.max(1, next) as StepNumber;
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop('smooth');
   };
 
   // 次のページへ進む（無効ステップは自動スキップ）
@@ -228,7 +255,7 @@ export default function App() {
       // 最終ステップで「全画面で再生」
       handleOpenFullscreen();
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop('smooth');
   };
 
   // レスポンシブ幅判定：PCは大画面2ペイン、タブレット・スマホは縦並びまたはタブ切替
@@ -271,37 +298,7 @@ export default function App() {
         disabledStepReasons={disabledStepReasons}
       />
 
-      {/* 
-        スマホ画面用：項目編集といまの看板プレビューの切り替えバー
-      */}
-      {!isWideLayout && (
-        <div className="bg-slate-50 border-b border-slate-200 px-3 py-1.5 flex items-center justify-center shrink-0">
-          <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-300 shadow-xs">
-            <button
-              onClick={() => setMobileTab('edit')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-                mobileTab === 'edit'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Edit3 className="w-4 h-4" />
-              <span>項目を選ぶ</span>
-            </button>
-            <button
-              onClick={() => setMobileTab('preview')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-                mobileTab === 'preview'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Eye className="w-4 h-4" />
-              <span>いまの看板を見る</span>
-            </button>
-          </div>
-        </div>
-      )}
+
 
       {/* 
         メインコンテンツエリア：
@@ -312,36 +309,33 @@ export default function App() {
       <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-5 pb-28">
         <div className={`flex flex-col ${isWideLayout ? 'lg:flex-row' : ''} gap-6 h-full min-h-0`}>
           {/* 左側 / 上部：1ページ1項目の選択画面（SignageWizard） */}
-          {(isWideLayout || windowWidth >= 768 || mobileTab === 'edit') && (
-            <div className="flex-1 min-h-0 overflow-y-auto">
-              <SignageWizard
-                currentStepNumber={currentStepNumber}
-                currentSlide={currentSlide}
-                currentSlideIndex={currentSlideIndex}
-                slides={slides}
-                folders={folders}
-                activeFolderId={activeFolderId}
-                activeFolderName={activeFolder?.name}
-                onUpdateSlide={updateCurrentSlide}
-                onApplyTemplate={applyTemplate}
-                onAddSlide={addSlide}
-                onDeleteSlide={deleteSlide}
-                onDuplicateSlide={duplicateSlide}
-                onSelectSlideIndex={setCurrentSlideIndex}
-                onCreateFolder={handleCreateFolder}
-                onDeleteFolder={handleDeleteFolder}
-                onDuplicateFolder={duplicateFolder}
-                onOpenFolder={handleOpenFolder}
-                onOpenFullscreen={handleOpenFullscreen}
-                onGoToStep={(num) => setCurrentStepNumber(num)}
-                onError={(err) => setGlobalError(err)}
-              />
-            </div>
-          )}
+          <div ref={wizardContainerRef} className="flex-1 min-h-0 overflow-y-auto">
+            <SignageWizard
+              currentStepNumber={currentStepNumber}
+              currentSlide={currentSlide}
+              currentSlideIndex={currentSlideIndex}
+              slides={slides}
+              folders={folders}
+              activeFolderId={activeFolderId}
+              activeFolderName={activeFolder?.name}
+              onUpdateSlide={updateCurrentSlide}
+              onApplyTemplate={applyTemplate}
+              onAddSlide={addSlide}
+              onDeleteSlide={deleteSlide}
+              onDuplicateSlide={duplicateSlide}
+              onSelectSlideIndex={setCurrentSlideIndex}
+              onCreateFolder={handleCreateFolder}
+              onDeleteFolder={handleDeleteFolder}
+              onDuplicateFolder={duplicateFolder}
+              onOpenFolder={handleOpenFolder}
+              onOpenFullscreen={handleOpenFullscreen}
+              onGoToStep={(num) => setCurrentStepNumber(num)}
+              onError={(err) => setGlobalError(err)}
+            />
+          </div>
 
           {/* 右側 / 下部：看板プレビュー */}
-          {(isWideLayout || windowWidth >= 768 || mobileTab === 'preview') && (
-            <div className={`${isWideLayout ? 'lg:w-[380px] xl:w-[440px]' : 'w-full max-w-2xl mx-auto'} flex flex-col shrink-0 min-h-[500px]`}>
+          <div className={`${isWideLayout ? 'lg:w-[380px] xl:w-[440px]' : 'w-full max-w-2xl mx-auto'} flex flex-col shrink-0 min-h-[500px]`}>
               <div className={`${isWideLayout ? 'sticky top-16 h-[calc(100vh-140px)]' : 'h-full'} flex flex-col`}>
                 {activeFolderId ? (
                   <PreviewPanel
@@ -368,11 +362,10 @@ export default function App() {
                     </p>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-      </main>
+      </div>
+    </main>
 
       {/* 
         最下部固定フッターバー（シニア向け）：

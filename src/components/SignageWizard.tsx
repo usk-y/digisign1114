@@ -873,12 +873,12 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                             ? '※ 3「縦書き」・8「写真」は選択不可'
                             : isPosterTemplate
                             ? '※ 5「背景」・11「メニュー」は選択不可'
-                            : '※ 3「横書き・縦書き」・5「模様・色」は選択不可'}
+                            : '※ 3「文字の向き」・5「背景の模様や色」・8〜11・14は選択不可'}
                         </div>
                       )}
                       {isMediaOnlyTemplate && isSelected && (
                         <div className="text-[10px] font-black text-rose-600 leading-tight">
-                          ※ ご自身で画像や映像を添付してください
+                          ５の「看板の背景」を設定してください
                         </div>
                       )}
                       <span className={`text-xs font-black block ${isSelected ? 'text-blue-600' : 'text-slate-500'}`}>
@@ -1503,13 +1503,17 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         {/* ステップ 8: 看板に載せる写真・画像を選んでください */}
         {/* ========================================================= */}
         {currentStepNumber === 8 && (
-          isTileMode ? (
+          isTileMode || isMediaOnlyMode ? (
             <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
               <div className="text-base font-black text-slate-700">
-                「タイル形式」を選択中のため、8番の看板写真は選択できません
+                {isTileMode
+                  ? '「タイル形式」を選択中のため、8番の看板写真は選択できません'
+                  : '「背景画像・映像専用」を選択中のため、8番の看板写真は選択できません'}
               </div>
               <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                タイル形式では各商品タイルの画像のみを使用します。商品の写真は「11」の商品リストから設定してください。
+                {isTileMode
+                  ? 'タイル形式では各商品タイルの画像のみを使用します。商品の写真は「11」の商品リストから設定してください。'
+                  : '背景画像・映像専用では文字やメニュー写真を使用しません。背景の画像・映像は2番（または全体設定）で設定してください。'}
               </p>
             </div>
           ) : (
@@ -2573,43 +2577,54 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         {/* ステップ 14: 文字の動く効果を選んでください */}
         {/* ========================================================= */}
         {currentStepNumber === 14 && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {textAnimOptions.map((opt) => {
-                const isSelected = (currentSlide.textAnimation || 'none') === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    onClick={() => onUpdateSlide({ textAnimation: opt.id as any })}
-                    className={`p-4 sm:p-5 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-start gap-3.5 ${
-                      isSelected
-                        ? 'bg-blue-50/80 border-blue-600 ring-2 ring-blue-300 shadow-md'
-                        : 'bg-white border-slate-200 hover:border-blue-400'
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-                      isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      <Type className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-base font-black text-slate-900 mb-1">
-                        {opt.name}
-                      </div>
-                      <div className="text-xs sm:text-sm text-slate-600 font-medium">
-                        {opt.desc}
-                      </div>
-                    </div>
-                    {isSelected && (
-                      <span className="px-2.5 py-1 bg-blue-600 text-white font-black text-xs rounded-full shrink-0">
-                        選択中
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+          isMediaOnlyMode ? (
+            <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
+              <div className="text-base font-black text-slate-700">
+                「背景画像・映像専用」を選択中のため、14番の文字アニメーションは選択できません
+              </div>
+              <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                背景画像・映像専用では文字を使用しないため、アニメーション効果は適用されません。
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {textAnimOptions.map((opt) => {
+                  const isSelected = (currentSlide.textAnimation || 'none') === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => onUpdateSlide({ textAnimation: opt.id as any })}
+                      className={`p-4 sm:p-5 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-start gap-3.5 ${
+                        isSelected
+                          ? 'bg-blue-50/80 border-blue-600 ring-2 ring-blue-300 shadow-md'
+                          : 'bg-white border-slate-200 hover:border-blue-400'
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                        isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
+                      }`}>
+                        <Type className="w-5 h-5" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-base font-black text-slate-900 mb-1">
+                          {opt.name}
+                        </div>
+                        <div className="text-xs sm:text-sm text-slate-600 font-medium">
+                          {opt.desc}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <span className="px-2.5 py-1 bg-blue-600 text-white font-black text-xs rounded-full shrink-0">
+                          選択中
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )
         )}
 
         {/* ========================================================= */}

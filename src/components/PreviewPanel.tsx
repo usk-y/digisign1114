@@ -253,7 +253,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         return (
           <div className="w-full shrink-0 bg-rose-50 border border-rose-200 rounded-xl px-3 py-1.5 text-center">
             <span className="text-xs font-black text-rose-600">
-              ※ ご自身で画像や映像を添付してください
+              ５の「看板の背景」を設定してください
             </span>
           </div>
         );
