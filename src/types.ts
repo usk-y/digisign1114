@@ -142,7 +142,7 @@ export interface SignageSlide {
   subheadlineHorizontalAlign?: 'left' | 'center' | 'right';
   subheadlineVerticalAlign?: 'top' | 'center' | 'bottom';
   shopNameAlign?: 'left' | 'center' | 'right';
-  layoutStyle: 'center-bold' | 'split-menu' | 'card-grid' | 'poster-hero';
+  layoutStyle: 'center-bold' | 'split-menu' | 'card-grid' | 'poster-hero' | 'media-only';
   writingMode?: 'horizontal' | 'vertical';
 }
 
@@ -163,9 +163,9 @@ export type StepKey =
   | 'step5_background'   // 5: 看板の背景（色20種、パターン、画像、映像500MB以下）
   | 'step6_shopname'     // 6: お店のお名前
   | 'step7_category_badge' // 7: お店のカテゴリータグ
-  | 'step8_title'        // 8: 一番目立たせたい文字（タイトル・改行対応・pt手入力）
-  | 'step9_subtitle'     // 9: 説明やキャッチフレーズ（pt手入力）
-  | 'step10_image'       // 10: 看板に載せる写真・画像
+  | 'step8_image'        // 8: 看板に載せる写真・画像
+  | 'step9_title'        // 9: 一番目立たせたい文字（タイトル・改行対応・pt手入力）
+  | 'step10_subtitle'    // 10: 説明やキャッチフレーズ（pt手入力）
   | 'step11_menu'        // 11: おすすめ商品やメニュー（おすすめ枠複数・品名価格直下pt・タグ最大6色）
   | 'step12_footer'      // 12: 看板の足元の文字とQRコード
   | 'step13_font'        // 13: 文字の書体（フォント）

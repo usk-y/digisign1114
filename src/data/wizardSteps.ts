@@ -38,18 +38,18 @@ export const WIZARD_STEPS: WizardStepInfo[] = [
   },
   {
     step: 8,
-    key: 'step8_title',
-    title: '一番目立たせたい文字（タイトル）を入力してください',
+    key: 'step8_image',
+    title: '看板に載せる写真・画像を選んでください',
   },
   {
     step: 9,
-    key: 'step9_subtitle',
-    title: '説明やキャッチフレーズを入力してください',
+    key: 'step9_title',
+    title: '一番目立たせたい文字（タイトル）を入力してください',
   },
   {
     step: 10,
-    key: 'step10_image',
-    title: '看板に載せる写真・画像を選んでください',
+    key: 'step10_subtitle',
+    title: '説明やキャッチフレーズを入力してください',
   },
   {
     step: 11,

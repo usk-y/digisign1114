@@ -186,17 +186,17 @@ export default function App() {
     setIsFullscreen(true);
   };
 
-  // 選択中の形式に応じて利用不可のステップ（タイル形式：10番不可、ポスター形式：5・11番不可）
+  // 選択中の形式に応じて利用不可のステップ（タイル形式：8番不可、ポスター形式：5・11番不可）
   const disabledSteps: StepNumber[] =
-    currentSlide.layoutStyle === 'card-grid'
-      ? [10]
-      : currentSlide.layoutStyle === 'poster-hero'
+    currentSlide?.layoutStyle === 'card-grid'
+      ? [8]
+      : currentSlide?.layoutStyle === 'poster-hero'
       ? [5, 11]
       : [];
 
   const disabledStepReasons: Partial<Record<StepNumber, string>> = {
     5: 'ポスター形式では「5. 背景」は選択できません',
-    10: 'タイル形式では「10. 写真・画像」は選択できません',
+    8: 'タイル形式では「8. 写真・画像」は選択できません',
     11: 'ポスター形式では「11. メニュー」は選択できません',
   };
 

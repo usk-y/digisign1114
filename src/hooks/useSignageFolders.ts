@@ -22,7 +22,7 @@ export function useSignageFolders(onError: (err: AppError) => void) {
         if (Array.isArray(parsed)) {
           return parsed.map((f: SignageFolder) => ({
             ...f,
-            slides: Array.isArray(f.slides) ? f.slides.map(repairSlideImages) : [],
+            slides: Array.isArray(f.slides) ? f.slides.filter(Boolean).map(repairSlideImages) : [],
           }));
         }
       }
@@ -120,13 +120,13 @@ export function useSignageFolders(onError: (err: AppError) => void) {
           ),
       footerNote: baseTmpl.footerNote ?? '営業中 / お気軽にお立ち寄りください',
       showQrCode: baseTmpl.showQrCode ?? true,
-      qrCodeUrl: baseTmpl.qrCodeUrl ?? 'https://google.com',
+      qrCodeUrl: baseTmpl.qrCodeUrl ?? 'https://example.com',
       qrCodeLabel: baseTmpl.qrCodeLabel ?? '読み取り',
       fontFamily: baseTmpl.fontFamily || 'Noto Sans JP',
       fontOverrides: {},
       textAnimation: baseTmpl.textAnimation || 'slideUp',
       textAnimationSpeed: baseTmpl.textAnimationSpeed || 'normal',
-      writingMode: baseTmpl.layoutStyle === 'card-grid' ? 'horizontal' : (baseTmpl.writingMode || 'horizontal'),
+      writingMode: baseTmpl.layoutStyle === 'card-grid' || baseTmpl.layoutStyle === 'media-only' ? 'horizontal' : (baseTmpl.writingMode || 'horizontal'),
       layoutStyle: baseTmpl.layoutStyle || 'split-menu',
     };
 

@@ -286,8 +286,9 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
   // 自動フォントサイズ計算（表示されているpt数と実際の描画pt数を100%完全一致させる）
   const isTileMode = currentSlide.layoutStyle === 'card-grid';
   const isPosterMode = currentSlide.layoutStyle === 'poster-hero';
+  const isMediaOnlyMode = currentSlide.layoutStyle === 'media-only';
   const maxMenuItems = isTileMode ? 12 : 6;
-  const isVertical = !isTileMode && currentSlide.writingMode === 'vertical';
+  const isVertical = !isTileMode && !isMediaOnlyMode && currentSlide.writingMode === 'vertical';
   const isLandscape = currentSlide.aspect === '16:9' || currentSlide.aspect === 'horizontal';
   const visibleCount = (currentSlide.menuItems || []).slice(0, maxMenuItems).length;
 
@@ -715,16 +716,17 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                 if (templateCategory === 'medical') return tmpl.category.includes('医療') || tmpl.category.includes('ヘルスケア');
                 return true;
               }).map((tmpl) => {
-                const isSelected =
-                  (currentSlide.layoutStyle || 'split-menu') === (tmpl.slide.layoutStyle || 'split-menu') &&
-                  (currentSlide.headline || '') === (tmpl.slide.headline || '') &&
-                  (currentSlide.shopName || '') === (tmpl.slide.shopName || '') &&
-                  (currentSlide.subheadline || '') === (tmpl.slide.subheadline || '') &&
-                  (currentSlide.menuItems?.length || 0) === (tmpl.slide.menuItems?.length || 0) &&
-                  (currentSlide.footerNote || '') === (tmpl.slide.footerNote || '');
                 const isMediaOnlyTemplate = tmpl.id === 'media-only';
                 const isTileTemplate = tmpl.slide.layoutStyle === 'card-grid';
                 const isPosterTemplate = tmpl.slide.layoutStyle === 'poster-hero';
+                const isSelected = isMediaOnlyTemplate
+                  ? currentSlide.layoutStyle === 'media-only'
+                  : (currentSlide.layoutStyle || 'split-menu') === (tmpl.slide.layoutStyle || 'split-menu') &&
+                    (currentSlide.headline || '') === (tmpl.slide.headline || '') &&
+                    (currentSlide.shopName || '') === (tmpl.slide.shopName || '') &&
+                    (currentSlide.subheadline || '') === (tmpl.slide.subheadline || '') &&
+                    (currentSlide.menuItems?.length || 0) === (tmpl.slide.menuItems?.length || 0) &&
+                    (currentSlide.footerNote || '') === (tmpl.slide.footerNote || '');
                 return (
                   <button
                     key={tmpl.id}
@@ -800,24 +802,50 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                                   {tmpl.slide.shopName}
                                 </div>
                                 <div className="grid grid-cols-2 grid-rows-2 gap-1 flex-1 min-h-0">
-                                  {(tmpl.slide.menuItems || []).slice(0, 4).map((item, idx) => (
-                                    <div
-                                      key={item.id || idx}
-                                      className="relative rounded overflow-hidden bg-black/60 border border-amber-500/40 flex items-end"
-                                    >
-                                      {item.imageUrl && (
-                                        <img
-                                          src={item.imageUrl}
-                                          alt=""
-                                          className="absolute inset-0 w-full h-full object-contain"
-                                        />
-                                      )}
-                                      <div className="relative z-10 w-full bg-gradient-to-t from-black/90 to-transparent px-1 py-0.5 flex items-center justify-between gap-0.5 text-[7px] leading-none">
-                                        <span className="text-white font-bold truncate">{item.name}</span>
-                                        <span className="text-amber-400 font-black shrink-0">{item.price}</span>
+                                  {(tmpl.slide.menuItems || []).slice(0, 4).map((item, idx) => {
+                                    const highlightLabel =
+                                      item.highlightBadge && item.highlightBadge !== 'なし' && item.highlightBadge !== ''
+                                        ? item.highlightBadge
+                                        : item.featured
+                                        ? 'おすすめ'
+                                        : '';
+                                    const isHighlighted = Boolean(highlightLabel);
+                                    return (
+                                      <div
+                                        key={item.id || idx}
+                                        className={`relative rounded overflow-hidden bg-black/60 border flex items-end ${
+                                          isHighlighted
+                                            ? 'border-amber-400 ring-1 ring-amber-400'
+                                            : 'border-amber-500/40'
+                                        }`}
+                                      >
+                                        {item.imageUrl && (
+                                          <img
+                                            src={item.imageUrl}
+                                            alt=""
+                                            className="absolute inset-0 w-full h-full object-contain"
+                                          />
+                                        )}
+                                        {item.tag && (
+                                          <span
+                                            className="absolute top-0.5 left-0.5 z-10 px-1 py-[1px] rounded text-[5px] font-black text-white leading-none shadow-xs"
+                                            style={{ backgroundColor: item.tagColor || '#ef4444' }}
+                                          >
+                                            {item.tag}
+                                          </span>
+                                        )}
+                                        {isHighlighted && (
+                                          <span className="absolute top-0.5 right-0.5 z-10 px-1 py-[1px] rounded-full bg-amber-400 text-slate-950 text-[5px] font-black leading-none shadow-xs">
+                                            {highlightLabel}
+                                          </span>
+                                        )}
+                                        <div className="relative z-10 w-full bg-gradient-to-t from-black/90 to-transparent px-1 py-0.5 flex items-center justify-between gap-0.5 text-[7px] leading-none">
+                                          <span className="text-white font-bold truncate">{item.name}</span>
+                                          <span className="text-amber-400 font-black shrink-0">{item.price}</span>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               </div>
                             ) : (
@@ -839,11 +867,18 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                     </div>
 
                     <div className="pt-1.5 border-t border-slate-100 space-y-1 text-center">
-                      {(isTileTemplate || isPosterTemplate) && (
+                      {(isTileTemplate || isPosterTemplate || isMediaOnlyTemplate) && (
                         <div className="text-[10px] font-black text-rose-600 leading-tight">
                           {isTileTemplate
-                            ? '※ 3「縦書き」・10「写真」は選択不可'
-                            : '※ 5「背景」・11「メニュー」は選択不可'}
+                            ? '※ 3「縦書き」・8「写真」は選択不可'
+                            : isPosterTemplate
+                            ? '※ 5「背景」・11「メニュー」は選択不可'
+                            : '※ 3「横書き・縦書き」・5「模様・色」は選択不可'}
+                        </div>
+                      )}
+                      {isMediaOnlyTemplate && isSelected && (
+                        <div className="text-[10px] font-black text-rose-600 leading-tight">
+                          ※ ご自身で画像や映像を添付してください
                         </div>
                       )}
                       <span className={`text-xs font-black block ${isSelected ? 'text-blue-600' : 'text-slate-500'}`}>
@@ -925,30 +960,46 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               <span className="block text-base sm:text-lg font-black text-slate-900">
                 2. 看板に書く文字の向きを選んでください：
               </span>
-              {isTileMode && (
+              {isMediaOnlyMode ? (
+                <p className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3.5 py-2">
+                  ※「背景画像・映像専用」を選択中のため、「横書き・縦書き」は選択できません。
+                </p>
+              ) : isTileMode ? (
                 <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2">
                   ※ タイル形式を選択中のため、「縦書き」は選択できません（横書き専用）。
                 </p>
-              )}
+              ) : null}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   type="button"
-                  onClick={() => onUpdateSlide({ writingMode: 'horizontal' })}
-                  className={`p-5 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2.5 ${
-                    isTileMode || (currentSlide.writingMode || 'horizontal') === 'horizontal'
-                      ? 'bg-blue-50/80 border-blue-600 ring-4 ring-blue-100 shadow-md scale-[1.01]'
-                      : 'bg-white border-slate-200 hover:border-slate-400 hover:bg-slate-50'
+                  disabled={isMediaOnlyMode}
+                  onClick={() => {
+                    if (isMediaOnlyMode) return;
+                    onUpdateSlide({ writingMode: 'horizontal' });
+                  }}
+                  className={`p-5 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-2.5 ${
+                    isMediaOnlyMode
+                      ? 'bg-slate-100 border-slate-200 opacity-45 cursor-not-allowed'
+                      : isTileMode || (currentSlide.writingMode || 'horizontal') === 'horizontal'
+                      ? 'bg-blue-50/80 border-blue-600 ring-4 ring-blue-100 shadow-md scale-[1.01] cursor-pointer'
+                      : 'bg-white border-slate-200 hover:border-slate-400 hover:bg-slate-50 cursor-pointer'
                   }`}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-2xl font-black">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-black ${
+                    isMediaOnlyMode ? 'bg-slate-200 text-slate-500' : 'bg-blue-100 text-blue-700'
+                  }`}>
                     横
                   </div>
                   <div>
-                    <h3 className="text-base sm:text-lg font-black text-slate-900">
+                    <h3 className={`text-base sm:text-lg font-black ${isMediaOnlyMode ? 'text-slate-500' : 'text-slate-900'}`}>
                       横書き
                     </h3>
                   </div>
-                  {(isTileMode || (currentSlide.writingMode || 'horizontal') === 'horizontal') && (
+                  {isMediaOnlyMode ? (
+                    <span className="px-3 py-1 bg-slate-300 text-slate-700 font-black text-[11px] rounded-full">
+                      背景画像・映像専用では選択不可
+                    </span>
+                  ) : (isTileMode || (currentSlide.writingMode || 'horizontal') === 'horizontal') && (
                     <span className="px-3.5 py-1 bg-blue-600 text-white font-black text-xs rounded-full flex items-center gap-1 shadow-xs">
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                       選ばれています
@@ -958,13 +1009,13 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
 
                 <button
                   type="button"
-                  disabled={isTileMode}
+                  disabled={isTileMode || isMediaOnlyMode}
                   onClick={() => {
-                    if (isTileMode) return;
+                    if (isTileMode || isMediaOnlyMode) return;
                     onUpdateSlide({ writingMode: 'vertical' });
                   }}
                   className={`p-5 rounded-2xl border-2 text-center transition-all flex flex-col items-center justify-center gap-2.5 ${
-                    isTileMode
+                    isTileMode || isMediaOnlyMode
                       ? 'bg-slate-100 border-slate-200 opacity-45 cursor-not-allowed'
                       : currentSlide.writingMode === 'vertical'
                       ? 'bg-blue-50/80 border-blue-600 ring-4 ring-blue-100 shadow-md scale-[1.01] cursor-pointer'
@@ -972,16 +1023,20 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                   }`}
                 >
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-2xl font-black ${
-                    isTileMode ? 'bg-slate-200 text-slate-500' : 'bg-amber-100 text-amber-800'
+                    isTileMode || isMediaOnlyMode ? 'bg-slate-200 text-slate-500' : 'bg-amber-100 text-amber-800'
                   }`}>
                     縦
                   </div>
                   <div>
-                    <h3 className={`text-base sm:text-lg font-black ${isTileMode ? 'text-slate-500' : 'text-slate-900'}`}>
+                    <h3 className={`text-base sm:text-lg font-black ${isTileMode || isMediaOnlyMode ? 'text-slate-500' : 'text-slate-900'}`}>
                       縦書き
                     </h3>
                   </div>
-                  {isTileMode ? (
+                  {isMediaOnlyMode ? (
+                    <span className="px-3 py-1 bg-slate-300 text-slate-700 font-black text-[11px] rounded-full">
+                      背景画像・映像専用では選択不可
+                    </span>
+                  ) : isTileMode ? (
                     <span className="px-3 py-1 bg-slate-300 text-slate-700 font-black text-[11px] rounded-full">
                       タイル形式では選択不可
                     </span>
@@ -1050,7 +1105,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                 「ポスター形式」を選択中のため、5番の背景は選択できません
               </div>
               <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                ポスター形式は「10」で選んだ看板写真を背景全体に使用します。背景写真を変更したい場合は「10」から設定してください。
+                ポスター形式は「8」で選んだ看板写真を背景全体に使用します。背景写真を変更したい場合は「8」から設定してください。
               </p>
             </div>
           ) : (
@@ -1113,8 +1168,30 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               </label>
             </div>
 
-            {/* 背景画像・動画が選択されている場合のロック警告表示 */}
-            {Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) && (
+            {/* 背景画像・動画、または「背景画像・映像専用」選択中のロック警告表示 */}
+            {isMediaOnlyMode ? (
+              <div className="relative z-20 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-rose-800 shadow-sm">
+                <div className="text-xs sm:text-sm font-black leading-relaxed">
+                  ※「背景画像・映像専用」を選択中のため、背景の模様や色は選択できません。上の枠から写真や動画ファイルを添付してください。
+                </div>
+                {Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateSlide({
+                        bgType: 'solid',
+                        bgCustomImage: undefined,
+                        bgVideoUrl: undefined,
+                        bgGradient: undefined,
+                      });
+                    }}
+                    className="px-4 py-2 bg-white hover:bg-rose-100 text-rose-700 border-2 border-rose-300 rounded-xl text-xs font-black transition-colors cursor-pointer shrink-0 shadow-xs"
+                  >
+                    添付を解除する
+                  </button>
+                )}
+              </div>
+            ) : Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) ? (
               <div className="relative z-20 p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-amber-950 shadow-sm">
                 <div className="text-xs sm:text-sm font-black leading-relaxed">
                   ※ 背景に写真や動画が設定されているため、模様や色は選べません。色や模様を変更したい場合は、「添付を解除して色に戻す」を押してください。
@@ -1134,10 +1211,10 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                   添付を解除して色に戻す
                 </button>
               </div>
-            )}
+            ) : null}
 
-            {/* 背景画像・動画が設定されている場合の無効化ラッパー */}
-            <div className={`space-y-6 transition-all ${Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) ? 'opacity-40 pointer-events-none select-none grayscale-[30%]' : ''}`}>
+            {/* 背景画像・動画、または「背景画像・映像専用」選択中の無効化ラッパー */}
+            <div className={`space-y-6 transition-all ${Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) || isMediaOnlyMode ? 'opacity-40 pointer-events-none select-none grayscale-[30%]' : ''}`}>
               {/* 2. 背景の模様（パターン） */}
               <div className="space-y-2.5">
                 <span className="block text-sm sm:text-base font-black text-slate-900 flex items-center gap-1.5">
@@ -1151,7 +1228,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                       <button
                         key={pat.id}
                         type="button"
-                        disabled={Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl)}
+                        disabled={Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) || isMediaOnlyMode}
                         onClick={() => onUpdateSlide({ 
                           bgPattern: pat.id,
                           bgCustomImage: undefined,
@@ -1184,7 +1261,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                       <span>お好みの自由色を選択</span>
                       <input
                         type="color"
-                        disabled={Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl)}
+                        disabled={Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) || isMediaOnlyMode}
                         value={currentSlide.bgColor?.startsWith('#') ? currentSlide.bgColor : '#ffffff'}
                         onChange={(e) => {
                           const color = e.target.value;
@@ -1210,6 +1287,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                       <span>ピックアップ色</span>
                       <input
                         type="color"
+                        disabled={Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) || isMediaOnlyMode}
                         value={currentSlide.accentColor?.startsWith('#') ? currentSlide.accentColor : '#f59e0b'}
                         onChange={(e) => {
                           const color = e.target.value;
@@ -1231,7 +1309,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                       <button
                         key={idx}
                         type="button"
-                        disabled={Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl)}
+                        disabled={Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) || isMediaOnlyMode}
                         onClick={() => {
                           addRecentColor(preset.bg);
                           onUpdateSlide({
@@ -1422,9 +1500,76 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* ステップ 8: 一番目立たせたい文字（タイトル）を入力してください */}
+        {/* ステップ 8: 看板に載せる写真・画像を選んでください */}
         {/* ========================================================= */}
         {currentStepNumber === 8 && (
+          isTileMode ? (
+            <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
+              <div className="text-base font-black text-slate-700">
+                「タイル形式」を選択中のため、8番の看板写真は選択できません
+              </div>
+              <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                タイル形式では各商品タイルの画像のみを使用します。商品の写真は「11」の商品リストから設定してください。
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6 max-w-xl mx-auto">
+              {currentSlide.subheadlineImages?.[0] ? (
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center space-y-3">
+                  <span className="block text-sm font-bold text-slate-600">
+                    {isPosterMode
+                      ? '現在設定されている背景ポスター写真：'
+                      : '現在設定されている写真（全体像が映るように表示されます）：'}
+                  </span>
+                  <div className="w-56 h-56 mx-auto rounded-xl overflow-hidden flex items-center justify-center">
+                    <img
+                      src={currentSlide.subheadlineImages[0]}
+                      alt="看板写真"
+                      className={`max-w-full max-h-full rounded-xl shadow-sm ${isPosterMode ? 'w-full h-full object-cover' : 'w-auto h-auto object-contain'}`}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onUpdateSlide({ subheadlineImages: [], subheadlineImageUrl: '' })}
+                    className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-black transition-colors cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>この写真を削除する</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-50 rounded-2xl text-center text-slate-600 font-bold text-sm border border-dashed border-slate-300">
+                  現在写真は入っていません
+                </div>
+              )}
+
+              <div>
+                <label className="p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-600 bg-blue-50/50 hover:bg-blue-50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 text-center">
+                  <Upload className="w-8 h-8 text-blue-600" />
+                  <span className="text-base sm:text-lg font-black text-slate-900">
+                    写真を選択する
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    {isPosterMode
+                      ? '選んだ写真がポスター形式の大きな背景写真として表示されます'
+                      : '全体像が切れることなく看板に綺麗に収まります'}
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleBannerFileUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
+          )
+        )}
+
+        {/* ========================================================= */}
+        {/* ステップ 9: 一番目立たせたい文字（タイトル）を入力してください */}
+        {/* ========================================================= */}
+        {currentStepNumber === 9 && (
           <div className="space-y-6 max-w-xl mx-auto">
             <div className="space-y-2">
               <div className="flex items-center justify-between mb-1">
@@ -1492,7 +1637,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               <span className="block text-sm font-black text-slate-800">
                 文字の並び位置：
               </span>
-              {isPosterMode ? (
+              {isPosterMode || isMediaOnlyMode ? (
                 <div className="space-y-2.5">
                   <div className="space-y-1">
                     <span className="block text-xs font-bold text-slate-600">横位置（左右）：</span>
@@ -1502,8 +1647,8 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                         { val: 'center', label: '中央' },
                         { val: 'right', label: '右寄せ' },
                       ].map((a) => {
-                        const isVertical = currentSlide.writingMode === 'vertical';
-                        const activeHorizontal = isVertical
+                        const isVerticalWriting = !isMediaOnlyMode && currentSlide.writingMode === 'vertical';
+                        const activeHorizontal = isVerticalWriting
                           ? (currentSlide.headlineHorizontalAlign || 'center')
                           : (currentSlide.headlineAlign || 'center');
                         return (
@@ -1512,7 +1657,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                             type="button"
                             onClick={() =>
                               onUpdateSlide(
-                                isVertical
+                                isVerticalWriting
                                   ? { headlineHorizontalAlign: a.val as 'left' | 'center' | 'right' }
                                   : { headlineAlign: a.val as 'left' | 'center' | 'right' }
                               )
@@ -1533,8 +1678,8 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                     <span className="block text-xs font-bold text-slate-600">縦位置（上下）：</span>
                     <div className="grid grid-cols-3 gap-2">
                       {(() => {
-                        const isVertical = currentSlide.writingMode === 'vertical';
-                        const vOptions = isVertical
+                        const isVerticalWriting = !isMediaOnlyMode && currentSlide.writingMode === 'vertical';
+                        const vOptions = isVerticalWriting
                           ? [
                               { val: 'left', label: '上寄せ' },
                               { val: 'center', label: '中央' },
@@ -1545,16 +1690,16 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                               { val: 'center', label: '中央' },
                               { val: 'bottom', label: '下寄せ' },
                             ];
-                        const activeVertical = isVertical
+                        const activeVertical = isVerticalWriting
                           ? (currentSlide.headlineAlign || 'center')
-                          : (currentSlide.headlineVerticalAlign || 'bottom');
+                          : (currentSlide.headlineVerticalAlign || (isMediaOnlyMode ? 'center' : 'bottom'));
                         return vOptions.map((a) => (
                           <button
                             key={`hl-v-${a.val}`}
                             type="button"
                             onClick={() =>
                               onUpdateSlide(
-                                isVertical
+                                isVerticalWriting
                                   ? { headlineAlign: a.val as 'left' | 'center' | 'right' }
                                   : { headlineVerticalAlign: a.val as 'top' | 'center' | 'bottom' }
                               )
@@ -1609,9 +1754,9 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* ステップ 9: 説明やキャッチフレーズを入力してください */}
+        {/* ステップ 10: 説明やキャッチフレーズを入力してください */}
         {/* ========================================================= */}
-        {currentStepNumber === 9 && (
+        {currentStepNumber === 10 && (
           <div className="space-y-6 max-w-xl mx-auto">
             <div className="space-y-2">
               <label className="block text-base font-black text-slate-900 mb-1">
@@ -1675,7 +1820,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               <span className="block text-sm font-black text-slate-800">
                 文字の並び位置：
               </span>
-              {isPosterMode ? (
+              {isPosterMode || isMediaOnlyMode ? (
                 <div className="space-y-2.5">
                   <div className="space-y-1">
                     <span className="block text-xs font-bold text-slate-600">横位置（左右）：</span>
@@ -1685,8 +1830,8 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                         { val: 'center', label: '中央' },
                         { val: 'right', label: '右寄せ' },
                       ].map((a) => {
-                        const isVertical = currentSlide.writingMode === 'vertical';
-                        const activeHorizontal = isVertical
+                        const isVerticalWriting = !isMediaOnlyMode && currentSlide.writingMode === 'vertical';
+                        const activeHorizontal = isVerticalWriting
                           ? (currentSlide.subheadlineHorizontalAlign || 'center')
                           : (currentSlide.subheadlineAlign || 'center');
                         return (
@@ -1695,7 +1840,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                             type="button"
                             onClick={() =>
                               onUpdateSlide(
-                                isVertical
+                                isVerticalWriting
                                   ? { subheadlineHorizontalAlign: a.val as 'left' | 'center' | 'right' }
                                   : { subheadlineAlign: a.val as 'left' | 'center' | 'right' }
                               )
@@ -1716,8 +1861,8 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                     <span className="block text-xs font-bold text-slate-600">縦位置（上下）：</span>
                     <div className="grid grid-cols-3 gap-2">
                       {(() => {
-                        const isVertical = currentSlide.writingMode === 'vertical';
-                        const vOptions = isVertical
+                        const isVerticalWriting = !isMediaOnlyMode && currentSlide.writingMode === 'vertical';
+                        const vOptions = isVerticalWriting
                           ? [
                               { val: 'left', label: '上寄せ' },
                               { val: 'center', label: '中央' },
@@ -1728,16 +1873,16 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                               { val: 'center', label: '中央' },
                               { val: 'bottom', label: '下寄せ' },
                             ];
-                        const activeVertical = isVertical
+                        const activeVertical = isVerticalWriting
                           ? (currentSlide.subheadlineAlign || 'center')
-                          : (currentSlide.subheadlineVerticalAlign || 'bottom');
+                          : (currentSlide.subheadlineVerticalAlign || (isMediaOnlyMode ? 'center' : 'bottom'));
                         return vOptions.map((a) => (
                           <button
                             key={`v-${a.val}`}
                             type="button"
                             onClick={() =>
                               onUpdateSlide(
-                                isVertical
+                                isVerticalWriting
                                   ? { subheadlineAlign: a.val as 'left' | 'center' | 'right' }
                                   : { subheadlineVerticalAlign: a.val as 'top' | 'center' | 'bottom' }
                               )
@@ -1805,73 +1950,6 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* ステップ 10: 看板に載せる写真・画像を選んでください */}
-        {/* ========================================================= */}
-        {currentStepNumber === 10 && (
-          isTileMode ? (
-            <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
-              <div className="text-base font-black text-slate-700">
-                「タイル形式」を選択中のため、10番の看板写真は選択できません
-              </div>
-              <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                タイル形式では各商品タイルの画像のみを使用します。商品の写真は「11」の商品リストから設定してください。
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-6 max-w-xl mx-auto">
-              {currentSlide.subheadlineImages?.[0] ? (
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-center space-y-3">
-                  <span className="block text-sm font-bold text-slate-600">
-                    {isPosterMode
-                      ? '現在設定されている背景ポスター写真：'
-                      : '現在設定されている写真（全体像が映るように表示されます）：'}
-                  </span>
-                  <div className="w-56 h-56 mx-auto rounded-xl overflow-hidden border-2 border-slate-300 shadow-sm bg-white flex items-center justify-center p-2">
-                    <img
-                      src={currentSlide.subheadlineImages[0]}
-                      alt="看板写真"
-                      className={`w-full h-full ${isPosterMode ? 'object-cover' : 'object-contain'}`}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onUpdateSlide({ subheadlineImages: [], subheadlineImageUrl: '' })}
-                    className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-black transition-colors cursor-pointer inline-flex items-center gap-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>この写真を削除する</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="p-4 bg-slate-50 rounded-2xl text-center text-slate-600 font-bold text-sm border border-dashed border-slate-300">
-                  現在写真は入っていません
-                </div>
-              )}
-
-              <div>
-                <label className="p-6 rounded-2xl border-2 border-blue-200 hover:border-blue-600 bg-blue-50/50 hover:bg-blue-50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 text-center">
-                  <Upload className="w-8 h-8 text-blue-600" />
-                  <span className="text-base sm:text-lg font-black text-slate-900">
-                    写真を選択する
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {isPosterMode
-                      ? '選んだ写真がポスター形式の大きな背景写真として表示されます'
-                      : '全体像が切れることなく看板に綺麗に収まります'}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleBannerFileUpload}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-            </div>
-          )
-        )}
-
-        {/* ========================================================= */}
         {/* ステップ 11: おすすめ商品やメニューを入れてください */}
         {/* ========================================================= */}
         {currentStepNumber === 11 && (
@@ -1881,7 +1959,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                 「ポスター形式」を選択中のため、11番のメニューは選択できません
               </div>
               <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                ポスター形式は大きな背景写真（10番）とタイトル・説明文・フッターで構成されます。
+                ポスター形式は大きな背景写真（8番）とタイトル・説明文・フッターで構成されます。
               </p>
             </div>
           ) : (
@@ -2032,8 +2110,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                               ...item,
                               id: `item-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
                             };
-                            const newItems = [...(currentSlide.menuItems || [])];
-                            newItems.splice(idx + 1, 0, copiedItem);
+                            const newItems = [...(currentSlide.menuItems || []), copiedItem];
                             onUpdateSlide({ menuItems: newItems });
                           }}
                           className="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 cursor-pointer transition-colors border border-blue-200"
@@ -2343,7 +2420,12 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                 </div>
                 <button
                   type="button"
-                  onClick={() => onUpdateSlide({ showQrCode: !currentSlide.showQrCode })}
+                  onClick={() =>
+                    onUpdateSlide({
+                      showQrCode: !currentSlide.showQrCode,
+                      ...(!currentSlide.showQrCode && !currentSlide.qrCodeUrl ? { qrCodeUrl: 'https://example.com' } : {}),
+                    })
+                  }
                   className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
                     currentSlide.showQrCode
                       ? 'bg-blue-600 text-white shadow-xs'

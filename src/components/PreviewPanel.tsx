@@ -232,6 +232,33 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
         </div>
       )}
 
+      {(() => {
+        const isMediaOnlyEmpty =
+          (currentSlide.layoutStyle === 'media-only' ||
+            ((currentSlide.layoutStyle || 'split-menu') === 'split-menu' &&
+              !currentSlide.headline &&
+              !currentSlide.shopName &&
+              !currentSlide.subheadline &&
+              !currentSlide.categoryBadge &&
+              !currentSlide.footerNote &&
+              (currentSlide.menuItems?.length || 0) === 0 &&
+              !currentSlide.showQrCode &&
+              !currentSlide.subheadlineImageUrl &&
+              !(currentSlide.subheadlineImages && currentSlide.subheadlineImages.length > 0) &&
+              !currentSlide.shopLogoUrl)) &&
+          !(currentSlide.bgType === 'image' && currentSlide.bgCustomImage) &&
+          !(currentSlide.bgType === 'video' && currentSlide.bgVideoUrl);
+
+        if (!isMediaOnlyEmpty) return null;
+        return (
+          <div className="w-full shrink-0 bg-rose-50 border border-rose-200 rounded-xl px-3 py-1.5 text-center">
+            <span className="text-xs font-black text-rose-600">
+              ※ ご自身で画像や映像を添付してください
+            </span>
+          </div>
+        );
+      })()}
+
       {/* 
         プレビュー表示エリア：
         9:16 の縦型看板がコンテナの幅と高さの中に「絶対に見切れない（Auto Fit）」ようにスケーリングして中央配置

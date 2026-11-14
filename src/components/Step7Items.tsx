@@ -190,7 +190,7 @@ export const Step7Items: React.FC<Step7ItemsProps> = ({
   };
 
   // メニュー商品のコピー（複製）
-  const handleDuplicateItem = (itemToCopy: MenuItem, index: number) => {
+  const handleDuplicateItem = (itemToCopy: MenuItem) => {
     if (slide.menuItems.length >= MAX_MENU_ITEMS) {
       setErrorInfo({
         title: 'メニュー登録数の上限到達',
@@ -206,8 +206,7 @@ export const Step7Items: React.FC<Step7ItemsProps> = ({
       name: (itemToCopy.name.length <= 13 ? `${itemToCopy.name} コピー` : itemToCopy.name).slice(0, 17),
     };
 
-    const newItems = [...slide.menuItems];
-    newItems.splice(index + 1, 0, newItem);
+    const newItems = [...slide.menuItems, newItem];
     onChange({ menuItems: newItems });
   };
 
@@ -387,7 +386,7 @@ export const Step7Items: React.FC<Step7ItemsProps> = ({
                     <button
                       type="button"
                       disabled={slide.menuItems.length >= MAX_MENU_ITEMS}
-                      onClick={() => handleDuplicateItem(item, idx)}
+                      onClick={() => handleDuplicateItem(item)}
                       className="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 hover:text-amber-400 hover:bg-slate-750 disabled:opacity-30 cursor-pointer flex items-center gap-1 text-[11px] font-bold border border-slate-700 transition-colors"
                       title={slide.menuItems.length >= MAX_MENU_ITEMS ? `最大${MAX_MENU_ITEMS}品のためコピーできません` : 'この商品をコピー'}
                     >
@@ -605,7 +604,12 @@ export const Step7Items: React.FC<Step7ItemsProps> = ({
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-300">店頭QRコード表示</span>
             <button
-              onClick={() => onChange({ showQrCode: !slide.showQrCode })}
+              onClick={() =>
+                onChange({
+                  showQrCode: !slide.showQrCode,
+                  ...(!slide.showQrCode && !slide.qrCodeUrl ? { qrCodeUrl: 'https://example.com' } : {}),
+                })
+              }
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all ${
                 slide.showQrCode
                   ? 'bg-emerald-600 text-white'

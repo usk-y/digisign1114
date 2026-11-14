@@ -6,42 +6,45 @@ import { repairSlideImages } from '../utils/imageFallback';
 
 const MAX_SLIDES = 10;
 
+function createDefaultSlide(): SignageSlide {
+  const cafeTmpl = SIGNAGE_TEMPLATES.find((t) => t.id === 'cafe')?.slide || SIGNAGE_TEMPLATES[0].slide;
+  return {
+    id: 'slide-1',
+    name: 'カフェ・喫茶',
+    duration: 10,
+    aspect: 'vertical',
+    frame: cafeTmpl.frame || 'modern-black',
+    bgType: cafeTmpl.bgType || 'solid',
+    bgColor: cafeTmpl.bgColor || '#fffbeb',
+    bgGradient: cafeTmpl.bgGradient || '',
+    bgPattern: cafeTmpl.bgPattern || 'dots',
+    bgAnimation: cafeTmpl.bgAnimation || 'none',
+    textColor: cafeTmpl.textColor || '#451a03',
+    accentColor: cafeTmpl.accentColor || '#d97706',
+    shopName: cafeTmpl.shopName || 'CAFE ROAST & BAKE',
+    categoryBadge: cafeTmpl.categoryBadge || "TODAY'S SPECIAL",
+    writingMode: 'horizontal',
+    headline: '至福の自家製カヌレ\n& 深煎り珈琲',
+    subheadline: '毎朝店内でじっくり焼き上げる\n外カリ・中モッチリの贅沢スイーツ',
+    subheadlineImages: cafeTmpl.subheadlineImages || [],
+    menuItems: ensureDiverseTagColors((cafeTmpl.menuItems || []).slice(0, 6)),
+    footerNote: 'テイクアウトOK！店内Wi-Fi完備\n営業時間 10:00〜21:00',
+    showQrCode: cafeTmpl.showQrCode ?? true,
+    qrCodeUrl: cafeTmpl.qrCodeUrl || 'https://example.com',
+    qrCodeLabel: cafeTmpl.qrCodeLabel || 'モバイルオーダー',
+    fontFamily: cafeTmpl.fontFamily || 'Zen Maru Gothic',
+    fontOverrides: {},
+    textAnimation: cafeTmpl.textAnimation || 'slideUp',
+    textAnimationSpeed: cafeTmpl.textAnimationSpeed || 'normal',
+    layoutStyle: 'split-menu',
+  };
+}
+
+const FALLBACK_SLIDE: SignageSlide = createDefaultSlide();
+
 export function useSignageEditor(onError: (err: AppError) => void) {
   // 初期スライド
-  const [slides, setSlides] = useState<SignageSlide[]>(() => {
-    const cafeTmpl = SIGNAGE_TEMPLATES.find((t) => t.id === 'cafe')?.slide || SIGNAGE_TEMPLATES[0].slide;
-    const initialSlide: SignageSlide = {
-      id: 'slide-1',
-      name: 'カフェ・喫茶',
-      duration: 10,
-      aspect: 'vertical',
-      frame: cafeTmpl.frame || 'modern-black',
-      bgType: cafeTmpl.bgType || 'solid',
-      bgColor: cafeTmpl.bgColor || '#fffbeb',
-      bgGradient: cafeTmpl.bgGradient || '',
-      bgPattern: cafeTmpl.bgPattern || 'dots',
-      bgAnimation: cafeTmpl.bgAnimation || 'none',
-      textColor: cafeTmpl.textColor || '#451a03',
-      accentColor: cafeTmpl.accentColor || '#d97706',
-      shopName: cafeTmpl.shopName || 'CAFE ROAST & BAKE',
-      categoryBadge: cafeTmpl.categoryBadge || "TODAY'S SPECIAL",
-      writingMode: 'horizontal',
-      headline: '至福の自家製カヌレ\n& 深煎り珈琲',
-      subheadline: '毎朝店内でじっくり焼き上げる\n外カリ・中モッチリの贅沢スイーツ',
-      subheadlineImages: cafeTmpl.subheadlineImages || [],
-      menuItems: ensureDiverseTagColors((cafeTmpl.menuItems || []).slice(0, 6)),
-      footerNote: 'テイクアウトOK！店内Wi-Fi完備\n営業時間 10:00〜21:00',
-      showQrCode: cafeTmpl.showQrCode ?? true,
-      qrCodeUrl: cafeTmpl.qrCodeUrl || 'https://example.com/menu',
-      qrCodeLabel: cafeTmpl.qrCodeLabel || 'モバイルオーダー',
-      fontFamily: cafeTmpl.fontFamily || 'Zen Maru Gothic',
-      fontOverrides: {},
-      textAnimation: cafeTmpl.textAnimation || 'slideUp',
-      textAnimationSpeed: cafeTmpl.textAnimationSpeed || 'normal',
-      layoutStyle: 'split-menu',
-    };
-    return [initialSlide];
-  });
+  const [slides, setSlides] = useState<SignageSlide[]>(() => [createDefaultSlide()]);
 
   const [history, setHistory] = useState<SignageSlide[][]>([]);
   const [future, setFuture] = useState<SignageSlide[][]>([]);
@@ -79,7 +82,7 @@ export function useSignageEditor(onError: (err: AppError) => void) {
   const [replayKey, setReplayKey] = useState<number>(0);
   const [selectedTextTarget, setSelectedTextTarget] = useState<TextTarget>('all');
 
-  const currentSlide = slides[currentSlideIndex] || slides[0];
+  const currentSlide = slides[currentSlideIndex] || slides[0] || FALLBACK_SLIDE;
 
   const replayAnimation = useCallback(() => {
     setReplayKey((k) => k + 1);
@@ -92,11 +95,12 @@ export function useSignageEditor(onError: (err: AppError) => void) {
     );
   }, [currentSlideIndex, setSlidesWithHistory]);
 
-  // テンプレート適用（現在のwritingModeを保持しつつ、前のテンプレートの背景・模様・色・画像が残らないよう完全リセット。ただしタイル形式は横書き固定・10番画像なし、ポスター形式は11番メニューなし）
+  // テンプレート適用（現在のwritingModeを保持しつつ、前のテンプレートの背景・模様・色・画像が残らないよう完全リセット。ただしタイル形式は横書き固定・8番画像なし、ポスター形式は11番メニューなし）
   const applyTemplate = useCallback((templateSlide: Partial<SignageSlide>) => {
     const isTile = templateSlide.layoutStyle === 'card-grid';
     const isPoster = templateSlide.layoutStyle === 'poster-hero';
-    const existingWritingMode = isTile
+    const isMediaOnly = templateSlide.layoutStyle === 'media-only';
+    const existingWritingMode = isTile || isMediaOnly
       ? 'horizontal'
       : (slides[currentSlideIndex]?.writingMode || 'horizontal');
     const maxItems = isTile ? 12 : 6;
@@ -215,17 +219,18 @@ export function useSignageEditor(onError: (err: AppError) => void) {
     } else {
       updateCurrentSlide({
         fontOverrides: {
-          ...currentSlide.fontOverrides,
+          ...(currentSlide?.fontOverrides || {}),
           [selectedTextTarget]: fontFamily,
         },
       });
     }
     setReplayKey((k) => k + 1);
-  }, [selectedTextTarget, currentSlide.fontOverrides, updateCurrentSlide]);
+  }, [selectedTextTarget, currentSlide?.fontOverrides, updateCurrentSlide]);
 
   // フォルダ切り替え時にスライドを読み込み
   const loadSlides = useCallback((loadedSlides: SignageSlide[]) => {
-    const repaired = loadedSlides.map(repairSlideImages);
+    const safeSlides = Array.isArray(loadedSlides) ? loadedSlides.filter(Boolean) : [];
+    const repaired = safeSlides.map(repairSlideImages);
     setSlides(JSON.parse(JSON.stringify(repaired)));
     setHistory([]);
     setFuture([]);
@@ -235,14 +240,14 @@ export function useSignageEditor(onError: (err: AppError) => void) {
 
   // 自動スライドプレビュー再生（秒数ごとにループ）
   useEffect(() => {
-    if (!isPlaying) return;
-    const duration = (currentSlide.duration || 10) * 1000;
+    if (!isPlaying || slides.length === 0) return;
+    const duration = (currentSlide?.duration || 10) * 1000;
     const timer = setTimeout(() => {
       setCurrentSlideIndex((prev) => (prev + 1) % slides.length);
       setReplayKey((k) => k + 1);
     }, duration);
     return () => clearTimeout(timer);
-  }, [isPlaying, currentSlideIndex, currentSlide.duration, slides.length]);
+  }, [isPlaying, currentSlideIndex, currentSlide?.duration, slides.length]);
 
   return {
     slides,

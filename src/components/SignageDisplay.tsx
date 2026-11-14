@@ -608,7 +608,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
         }}
         className={`absolute top-0 left-0 overflow-hidden flex flex-col ${getFrameClasses()}`}
       >
-        {/* 背景レイヤー：ポスター形式時は10番の写真を大きな背景に配置 */}
+        {/* 背景レイヤー：ポスター形式時は8番の写真を大きな背景に配置 */}
         {isPosterHeroWithPhoto ? (
           <div className="absolute inset-0 z-0 overflow-hidden bg-slate-950">
             <img
@@ -793,7 +793,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
           {/* タイル形式（card-grid）・ポスター形式（poster-hero）・縦書き・横書きのレイアウト分岐 */}
           {slide.layoutStyle === 'card-grid' ? (
             <div className="flex-1 flex flex-col gap-2 min-h-0 h-full overflow-hidden py-0.5">
-              {/* タイトル・説明文（タイル形式では10番の写真画像は非表示・選択不可） */}
+              {/* タイトル・説明文（タイル形式では8番の写真画像は非表示・選択不可） */}
               {(slide.headline || slide.subheadline) && (
                 <AnimatePresence mode="wait">
                   <motion.div
@@ -1106,7 +1106,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
               })()}
             </div>
           ) : slide.layoutStyle === 'poster-hero' ? (
-            /* ポスター形式（10番の大きな写真を背景に表示し、メニュー11番は使わずタイトル・説明を大胆に配置） */
+            /* ポスター形式（8番の大きな写真を背景に表示し、メニュー11番は使わずタイトル・説明を大胆に配置） */
             slide.writingMode === 'vertical' ? (
               <div className="relative flex-1 min-h-0 w-full h-full overflow-hidden py-2 px-2">
                 {(['left', 'center', 'right'] as const).map((slot) => {
@@ -1217,6 +1217,95 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                 })}
               </div>
             )
+          ) : slide.layoutStyle === 'media-only' ? (
+            /* 背景画像・映像専用（横位置3種 × 縦位置3種でタイトル・説明を独立配置） */
+            <div className="relative flex-1 min-h-0 w-full h-full overflow-hidden py-2 sm:py-3 px-1 sm:px-2">
+              {(['top', 'center', 'bottom'] as const).map((vSlot) => {
+                const headlineV = slide.headlineVerticalAlign || 'center';
+                const subheadlineV = slide.subheadlineVerticalAlign || 'center';
+                const hasHeadline = Boolean(slide.headline && headlineV === vSlot);
+                const hasSubheadline = Boolean(slide.subheadline && subheadlineV === vSlot);
+                if (!hasHeadline && !hasSubheadline) return null;
+                const vJustifyClass =
+                  vSlot === 'top' ? 'justify-start' : vSlot === 'center' ? 'justify-center' : 'justify-end';
+                const hasBgMedia =
+                  (slide.bgType === 'image' && Boolean(slide.bgCustomImage)) ||
+                  (slide.bgType === 'video' && Boolean(slide.bgVideoUrl));
+
+                return (
+                  <div
+                    key={vSlot}
+                    className={`absolute inset-0 flex flex-col ${vJustifyClass} pointer-events-none py-2 sm:py-3 px-1 sm:px-2`}
+                  >
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={`media-h-${vSlot}-${slide.id || ''}-${slide.headline || ''}-${slide.subheadline || ''}-${slide.textAnimation || 'none'}-${slide.textAnimationSpeed || 'normal'}`}
+                        variants={getTextAnimationVariants()}
+                        initial="initial"
+                        animate="animate"
+                        className="w-full flex flex-col gap-2"
+                      >
+                        {hasHeadline && (
+                          <div
+                            onClick={() => onSelectTextTarget?.('headline')}
+                            className={`w-full p-1 pointer-events-auto ${getSelectableClass('headline')}`}
+                            style={{ textAlign: slide.headlineAlign || 'center' }}
+                            title="クリックして大見出しの書体を変更"
+                          >
+                            <h1
+                              className="font-black tracking-tight whitespace-pre-line break-words w-full block"
+                              style={{
+                                fontFamily: getTargetFont('headline'),
+                                color: getTargetTextColor('headline'),
+                                fontSize: `${effectiveHeadlinePt}px`,
+                                lineHeight: 1.15,
+                                textAlign: slide.headlineAlign || 'center',
+                                textShadow:
+                                  slide.textAnimation === 'neonFlicker'
+                                    ? `0 0 16px ${slide.accentColor}, 0 0 32px ${slide.accentColor}`
+                                    : hasBgMedia
+                                    ? '0 4px 18px rgba(0,0,0,0.8), 0 1px 4px rgba(0,0,0,0.9)'
+                                    : 'none',
+                              }}
+                            >
+                              {slide.headline}
+                            </h1>
+                            {selectedTextTarget === 'headline' && (
+                              <div className="inline-flex items-center gap-1 text-[11px] bg-amber-400 text-slate-950 font-bold px-2 py-0.5 rounded-full mt-1">
+                                <Type className="w-3 h-3" /> 見出しの書体を変更中
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {hasSubheadline && (
+                          <div
+                            onClick={() => onSelectTextTarget?.('subheadline')}
+                            className={`w-full p-1 pointer-events-auto ${getSelectableClass('subheadline')}`}
+                            style={{ textAlign: slide.subheadlineAlign || 'center' }}
+                            title="クリックして説明文の書体を変更"
+                          >
+                            <p
+                              className="font-bold whitespace-pre-line break-words w-full block"
+                              style={{
+                                fontFamily: getTargetFont('subheadline'),
+                                color: getTargetTextColor('subheadline'),
+                                fontSize: `${effectiveSubheadlinePt}px`,
+                                lineHeight: 1.28,
+                                textAlign: slide.subheadlineAlign || 'center',
+                                textShadow: hasBgMedia ? '0 2px 10px rgba(0,0,0,0.85)' : 'none',
+                              }}
+                            >
+                              {slide.subheadline}
+                            </p>
+                          </div>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+            </div>
           ) : slide.writingMode === 'vertical' ? (
             <div className="flex-1 flex flex-row items-stretch justify-between gap-3 min-h-0 h-full py-0.5 overflow-hidden">
               {/* 1. 商品エリア */}
@@ -1295,7 +1384,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                           }}
                         >
                           {renderHighlightBadge(item, 'left-1/2 -translate-x-1/2', 'z-30')}
-                          {item.imageUrl && (
+                          {visibleItems.some((i) => Boolean(i.imageUrl)) && (
                             <div
                               className={`w-full ${
                                 isLandscape
@@ -1315,17 +1404,17 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                                   : visibleCount <= 4
                                   ? 'h-[120px] sm:h-[142px] max-w-[240px]'
                                   : 'h-[98px] sm:h-[112px]'
-                              } flex items-center justify-center overflow-hidden shrink-0 self-center rounded-xl ${
-                                isMediaActive ? 'bg-slate-50 border border-slate-200/80' : 'bg-black/5 border border-black/5'
-                              } shadow-xs p-1`}
+                              } flex items-center justify-center overflow-hidden shrink-0 self-center`}
                             >
-                              <img
-                                src={item.imageUrl}
-                                alt={item.name}
-                                referrerPolicy="no-referrer"
-                                onError={handleImageError}
-                                className="w-full h-full object-contain rounded-lg drop-shadow-xs"
-                              />
+                              {item.imageUrl && (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.name}
+                                  referrerPolicy="no-referrer"
+                                  onError={handleImageError}
+                                  className="w-auto h-auto max-w-full max-h-full object-contain rounded-lg drop-shadow-xs"
+                                />
+                              )}
                             </div>
                           )}
 
@@ -1413,19 +1502,13 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                   {/* 看板画像：大見出しおよびサブコピーの一番上の位置（最上部）に配置 */}
                   {bannerImageUrl && (
                     <div className="w-full h-[28%] max-h-[160px] min-h-[75px] shrink-0 flex items-center justify-center mb-1.5 px-0.5">
-                      <div
-                        className={`w-full h-full rounded-2xl ${
-                          isMediaActive ? 'bg-white/95 border border-slate-200/90' : 'bg-black/5 border border-slate-900/10'
-                        } overflow-hidden flex items-center justify-center shadow-md p-1.5`}
-                      >
-                        <img
-                          src={bannerImageUrl}
-                          alt="看板画像"
-                          referrerPolicy="no-referrer"
-                          onError={handleImageError}
-                          className="w-full h-full object-contain rounded-xl drop-shadow-sm"
-                        />
-                      </div>
+                      <img
+                        src={bannerImageUrl}
+                        alt="看板画像"
+                        referrerPolicy="no-referrer"
+                        onError={handleImageError}
+                        className="max-w-full max-h-full w-auto h-auto object-contain rounded-xl drop-shadow-sm"
+                      />
                     </div>
                   )}
 
@@ -1436,22 +1519,16 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                 </div>
               ) : (
                 <div className="w-[50%] min-w-0 flex flex-col items-center justify-start h-full max-h-full py-0.5 overflow-hidden pr-0 pl-1">
-                  {/* 看板画像：右側上部スペース一杯（幅100%、高さ1/5程度） */}
+                  {/* 看板画像：右側上部スペース一杯（余白枠なし） */}
                   {bannerImageUrl && (
                     <div className="w-full h-[20%] shrink-0 flex items-center justify-center mb-1.5 px-0.5">
-                      <div
-                        className={`w-full h-full rounded-2xl ${
-                          isMediaActive ? 'bg-white/95 border border-slate-200/90' : 'bg-black/5 border border-slate-900/10'
-                        } overflow-hidden flex items-center justify-center shadow-md p-1.5`}
-                      >
-                        <img
-                          src={bannerImageUrl}
-                          alt="看板画像"
-                          referrerPolicy="no-referrer"
-                          onError={handleImageError}
-                          className="w-full h-full object-contain rounded-xl drop-shadow-sm"
-                        />
-                      </div>
+                      <img
+                        src={bannerImageUrl}
+                        alt="看板画像"
+                        referrerPolicy="no-referrer"
+                        onError={handleImageError}
+                        className="max-w-full max-h-full w-auto h-auto object-contain rounded-xl drop-shadow-sm"
+                      />
                     </div>
                   )}
 
@@ -1476,23 +1553,17 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                     <div
                       className={`${
                         visibleCount > 0
-                          ? 'w-[32%] max-w-[300px] h-full py-1'
-                          : 'w-[42%] max-w-[400px] h-[82%] max-h-[380px]'
+                          ? 'max-w-[32%] h-full py-1'
+                          : 'max-w-[42%] h-[82%] max-h-[380px]'
                       } shrink-0 flex items-center justify-center`}
                     >
-                      <div
-                        className={`w-full h-full rounded-2xl overflow-hidden shadow-md ${
-                          isMediaActive ? 'bg-white/95 border border-slate-200/90' : 'bg-slate-900/5 border border-slate-900/10'
-                        } flex items-center justify-center p-1.5`}
-                      >
-                        <img
-                          src={bannerImageUrl}
-                          alt="看板画像"
-                          referrerPolicy="no-referrer"
-                          onError={handleImageError}
-                          className="w-full h-full object-contain rounded-xl drop-shadow-sm transition-all duration-200"
-                        />
-                      </div>
+                      <img
+                        src={bannerImageUrl}
+                        alt="看板画像"
+                        referrerPolicy="no-referrer"
+                        onError={handleImageError}
+                        className="max-w-full max-h-full w-auto h-auto object-contain rounded-xl drop-shadow-sm transition-all duration-200"
+                      />
                     </div>
                   )}
 
@@ -1611,7 +1682,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                       >
                         {renderHighlightBadge(item, 'left-1/2 -translate-x-1/2', 'z-20')}
 
-                        {/* 商品画像（1.5倍拡大・全体像が切れずに収まるようobject-contain） */}
+                        {/* 商品画像（余白枠なしで写真ぴったりに表示） */}
                         {item.imageUrl && (
                           <div
                             className={`w-full ${
@@ -1622,16 +1693,14 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                                 : visibleCount === 4
                                 ? 'h-[46%] max-h-[120px] min-h-[66px] max-w-[225px]'
                                 : 'h-[42%] max-h-[102px] min-h-[56px] max-w-[195px]'
-                            } flex items-center justify-center overflow-hidden shrink-0 self-center rounded-xl ${
-                              isMediaActive ? 'bg-slate-100 border border-slate-200/80' : 'bg-black/5 border border-black/5'
-                            } shadow-xs p-1`}
+                            } flex items-center justify-center overflow-hidden shrink-0 self-center`}
                           >
                             <img
                               src={item.imageUrl}
                               alt={item.name}
                               referrerPolicy="no-referrer"
                               onError={handleImageError}
-                              className="w-full h-full object-contain rounded-lg drop-shadow-xs"
+                              className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg drop-shadow-xs"
                             />
                           </div>
                         )}
@@ -1698,31 +1767,27 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                     animate="animate"
                     className="text-center py-0.5 my-0 shrink-0"
                   >
-                    {/* 看板画像 (1個) - 縦画面の横書き：タイトルと説明文の上の位置に大きく配置 */}
+                    {/* 看板画像 (1個) - 縦画面の横書き：余白枠なしで写真ぴったりに表示 */}
                     {bannerImageUrl && (() => {
-                      const bannerHeightClass = visibleCount === 0
-                        ? 'h-[240px] sm:h-[300px] max-w-[500px]'
+                      const bannerMaxClass = visibleCount === 0
+                        ? 'max-h-[240px] sm:max-h-[300px] max-w-[500px]'
                         : visibleCount === 1
-                        ? 'h-[170px] sm:h-[210px] max-w-[460px]'
+                        ? 'max-h-[170px] sm:max-h-[210px] max-w-[460px]'
                         : visibleCount === 2
-                        ? 'h-[145px] sm:h-[185px] max-w-[440px]'
+                        ? 'max-h-[145px] sm:max-h-[185px] max-w-[440px]'
                         : visibleCount <= 4
-                        ? 'h-[120px] sm:h-[150px] max-w-[400px]'
-                        : 'h-[95px] sm:h-[120px] max-w-[360px]';
+                        ? 'max-h-[120px] sm:max-h-[150px] max-w-[400px]'
+                        : 'max-h-[95px] sm:max-h-[120px] max-w-[360px]';
 
                       return (
                         <div className="w-full flex items-center justify-center mb-2.5 mt-0 shrink-0 px-2">
-                          <div className={`w-full ${bannerHeightClass} rounded-2xl ${
-                            isMediaActive ? 'bg-white/95 border border-slate-200/90 shadow-md' : 'bg-black/5 border border-slate-900/10 shadow-sm'
-                          } overflow-hidden flex items-center justify-center shrink-0 p-1`}>
-                            <img
-                              src={bannerImageUrl}
-                              alt="看板画像"
-                              referrerPolicy="no-referrer"
-                              onError={handleImageError}
-                              className="w-full h-full object-contain rounded-xl drop-shadow-sm transition-all duration-200"
-                            />
-                          </div>
+                          <img
+                            src={bannerImageUrl}
+                            alt="看板画像"
+                            referrerPolicy="no-referrer"
+                            onError={handleImageError}
+                            className={`w-auto h-auto max-w-full ${bannerMaxClass} object-contain rounded-xl drop-shadow-sm transition-all duration-200`}
+                          />
                         </div>
                       );
                     })()}
@@ -1822,27 +1887,27 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                       >
                         {renderHighlightBadge(item, 'left-2', 'z-20')}
 
-                        {item.imageUrl && (
+                        {visibleItems.some((i) => Boolean(i.imageUrl)) && (
                           <div
                             className={`${
                               visibleCount === 1
-                                ? 'w-[144px] h-[144px] sm:w-[168px] sm:h-[168px]'
+                                ? 'w-[168px] h-[144px] sm:h-[168px]'
                                 : visibleCount === 2
-                                ? 'w-[108px] h-[108px] sm:w-[132px] sm:h-[132px]'
+                                ? 'w-[132px] h-[108px] sm:h-[132px]'
                                 : isDenseMenu
                                 ? 'w-[72px] h-[72px] max-h-full'
-                                : 'w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] max-h-full'
-                            } rounded-xl ${
-                              isMediaActive ? 'bg-slate-50 border border-slate-200/80' : 'bg-black/5 border border-black/5'
-                            } flex items-center justify-center overflow-hidden shrink-0 self-center shadow-xs p-1`}
+                                : 'w-[96px] h-[84px] sm:h-[96px] max-h-full'
+                            } flex items-center justify-center overflow-hidden shrink-0 self-center`}
                           >
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              referrerPolicy="no-referrer"
-                              onError={handleImageError}
-                              className="w-full h-full object-contain rounded-lg drop-shadow-xs"
-                            />
+                            {item.imageUrl && (
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                referrerPolicy="no-referrer"
+                                onError={handleImageError}
+                                className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg drop-shadow-xs"
+                              />
+                            )}
                           </div>
                         )}
 
