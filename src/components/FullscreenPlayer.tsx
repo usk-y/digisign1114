@@ -98,7 +98,8 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({
         showControls ? 'cursor-default' : 'cursor-none hover:cursor-default'
       }`}
       onMouseMove={() => setShowControls(true)}
-      onClick={() => setShowControls((prev) => !prev)}
+      onTouchStart={() => setShowControls(true)}
+      onClick={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
     >
       {/* 上部プログレスバー（残り秒数の可視化） */}

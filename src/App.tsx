@@ -267,8 +267,8 @@ export default function App() {
     scrollToTop('smooth');
   };
 
-  // レスポンシブ幅判定：PCは大画面2ペイン、タブレット・スマホは縦並びまたはタブ切替
-  const isWideLayout = windowWidth >= 1020;
+  // レスポンシブ幅判定：PCは大画面2ペイン（lg:1024px以上）、タブレット・スマホは縦並び
+  const isWideLayout = windowWidth >= 1024;
 
   return (
     <div className="min-h-screen w-full bg-white text-slate-900 flex flex-col font-sans select-none">
@@ -378,30 +378,30 @@ export default function App() {
         最下部固定フッターバー（シニア向け）：
         「ページ ◯ / 14」の大きな表示 ＆ 「← まえへ」「つぎへ →」の大きなボタン
       */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-slate-200 shadow-xl px-4 py-3">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
+      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-slate-200 shadow-xl px-2.5 sm:px-4 py-2.5 sm:py-3">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
           {/* まえへ ボタン */}
           <button
             type="button"
             onClick={handlePrevStep}
             disabled={currentStepNumber === 1}
-            className={`px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-black text-sm sm:text-base flex items-center gap-1.5 transition-all cursor-pointer border ${
+            className={`px-3 sm:px-6 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-base flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer border whitespace-nowrap shrink-0 ${
               currentStepNumber === 1
                 ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-50'
                 : 'bg-white hover:bg-slate-50 text-slate-800 border-slate-300 shadow-xs active:scale-95'
             }`}
           >
-            <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5] shrink-0" />
             <span>まえへ</span>
           </button>
 
           {/* 中央：大きなページ数表示 */}
-          <div className="text-center">
-            <span className="text-xs sm:text-sm font-bold text-slate-500 block">
+          <div className="text-center min-w-0">
+            <span className="text-[11px] sm:text-sm font-bold text-slate-500 block whitespace-nowrap">
               現在の進み具合
             </span>
-            <div className="text-lg sm:text-2xl font-black text-slate-900 font-mono tracking-tight">
-              ページ <span className="text-blue-600 text-xl sm:text-3xl">{currentStepNumber}</span> / {totalSteps}
+            <div className="text-base sm:text-2xl font-black text-slate-900 font-mono tracking-tight whitespace-nowrap">
+              ページ <span className="text-blue-600 text-lg sm:text-3xl">{currentStepNumber}</span> / {totalSteps}
             </div>
           </div>
 
@@ -411,7 +411,7 @@ export default function App() {
             onClick={handleNextStep}
             disabled={currentStepNumber === 1 && !isSignboardActive}
             title={currentStepNumber === 1 && !isSignboardActive ? '看板の名前を入力して新しく作成してください' : ''}
-            className={`px-5 sm:px-7 py-2.5 sm:py-3 rounded-2xl font-black text-sm sm:text-base flex items-center gap-1.5 transition-all shadow-md active:scale-95 text-white ${
+            className={`px-3.5 sm:px-7 py-2.5 sm:py-3 rounded-2xl font-black text-xs sm:text-base flex items-center gap-1 sm:gap-1.5 transition-all shadow-md active:scale-95 text-white whitespace-nowrap shrink-0 ${
               currentStepNumber === 1 && !isSignboardActive
                 ? 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60 shadow-none'
                 : currentStepNumber === totalSteps
@@ -421,15 +421,15 @@ export default function App() {
           >
             <span>
               {currentStepNumber === 1 && !isSignboardActive
-                ? '看板を作ると進めます'
+                ? '看板を作成で進む'
                 : currentStepNumber === totalSteps
                 ? '全画面で再生'
                 : 'つぎへ'}
             </span>
             {currentStepNumber === totalSteps ? (
-              <MonitorPlay className="w-5 h-5 stroke-[2.5]" />
+              <MonitorPlay className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5] shrink-0" />
             ) : (
-              <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5] shrink-0" />
             )}
           </button>
         </div>

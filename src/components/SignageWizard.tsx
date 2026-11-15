@@ -2089,9 +2089,9 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                       ]
                     });
                   }}
-                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black flex items-center gap-1 cursor-pointer shadow-xs"
+                  className="px-3 sm:px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black flex items-center gap-1 cursor-pointer shadow-xs whitespace-nowrap shrink-0"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-4 h-4 shrink-0" />
                   <span>商品を追加する</span>
                 </button>
               )}
@@ -2106,9 +2106,9 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
             />
 
             {/* 商品名・説明文・「値段など」の文字サイズ（一括変更） */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-2xs">
-              <div className="flex items-center justify-between gap-2.5 flex-1">
-                <span className="text-xs sm:text-sm font-black text-slate-800">
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-2.5 xl:gap-3 shadow-2xs">
+              <div className="flex items-center justify-between gap-2 flex-1 min-w-0">
+                <span className="text-xs sm:text-sm font-black text-slate-800 whitespace-nowrap shrink-0">
                   商品名：
                 </span>
                 <PtStepper
@@ -2128,10 +2128,10 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                 />
               </div>
 
-              <div className="h-px md:h-8 bg-slate-200 md:w-px" />
+              <div className="h-px xl:h-8 bg-slate-200 xl:w-px" />
 
-              <div className="flex items-center justify-between gap-2.5 flex-1">
-                <span className="text-xs sm:text-sm font-black text-slate-800">
+              <div className="flex items-center justify-between gap-2 flex-1 min-w-0">
+                <span className="text-xs sm:text-sm font-black text-slate-800 whitespace-nowrap shrink-0">
                   説明文：
                 </span>
                 <PtStepper
@@ -2151,10 +2151,10 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                 />
               </div>
 
-              <div className="h-px md:h-8 bg-slate-200 md:w-px" />
+              <div className="h-px xl:h-8 bg-slate-200 xl:w-px" />
 
-              <div className="flex items-center justify-between gap-2.5 flex-1">
-                <span className="text-xs sm:text-sm font-black text-slate-800">
+              <div className="flex items-center justify-between gap-2 flex-1 min-w-0">
+                <span className="text-xs sm:text-sm font-black text-slate-800 whitespace-nowrap shrink-0">
                   値段など：
                 </span>
                 <PtStepper
@@ -2181,15 +2181,15 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
 
                 return (
                   <div key={item.id || idx} className="bg-slate-50 p-4 rounded-2xl border-2 border-slate-200 space-y-3 relative">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                      <span className="font-black text-sm text-slate-800 flex items-center gap-1.5">
-                        <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-2">
+                      <span className="font-black text-sm text-slate-800 flex items-center gap-1.5 whitespace-nowrap">
+                        <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs shrink-0">
                           {idx + 1}
                         </span>
                         <span>商品 {idx + 1}</span>
                       </span>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                         <button
                           type="button"
                           onClick={() => {
@@ -2208,11 +2208,11 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                             const newItems = [...(currentSlide.menuItems || []), copiedItem];
                             onUpdateSlide({ menuItems: newItems });
                           }}
-                          className="text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 cursor-pointer transition-colors border border-blue-200"
+                          className="text-[11px] sm:text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 sm:px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 cursor-pointer transition-colors border border-blue-200 whitespace-nowrap shrink-0"
                           title="この商品をコピーして複製追加"
                         >
-                          <Copy className="w-3.5 h-3.5" />
-                          <span>この商品をコピーする</span>
+                          <Copy className="w-3.5 h-3.5 shrink-0" />
+                          <span>この商品をコピー</span>
                         </button>
 
                         <button
@@ -2221,9 +2221,9 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                             const newItems = (currentSlide.menuItems || []).filter((_, i) => i !== idx);
                             onUpdateSlide({ menuItems: newItems });
                           }}
-                          className="text-xs text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-lg font-bold flex items-center gap-1 cursor-pointer transition-colors border border-rose-200"
+                          className="text-[11px] sm:text-xs text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2 py-1 rounded-lg font-bold flex items-center gap-1 cursor-pointer transition-colors border border-rose-200 whitespace-nowrap shrink-0"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5 shrink-0" />
                           <span>削除</span>
                         </button>
                       </div>
@@ -2383,7 +2383,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                         />
 
                         {/* タグカラーパレット ＆ カスタム色選択 */}
-                        <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-300">
+                        <div className="flex flex-wrap items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-300">
                           {[
                             '#ef4444', // 赤
                             '#2563eb', // 青
