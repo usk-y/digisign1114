@@ -13,7 +13,6 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Eye, 
-  Edit3, 
   MonitorPlay
 } from 'lucide-react';
 
@@ -31,9 +30,6 @@ export default function App() {
   // 全画面サイネージプレイヤー状態
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [fullscreenSlides, setFullscreenSlides] = useState<SignageSlide[]>([]);
-
-  // スマホ縦画面時専用の切り替えタブ（'edit' | 'preview'）
-  const [mobileTab, setMobileTab] = useState<'edit' | 'preview'>('edit');
 
   // フォルダ管理カスタムフック
   const {
@@ -72,12 +68,16 @@ export default function App() {
     canRedo,
   } = useSignageEditor(setGlobalError);
 
-  // 初回マウント時：選択中フォルダのスライドをエディタに同期ロード
+  // 初回マウント時：選択中フォルダが存在する場合のみスライドをロード
   useEffect(() => {
     if (activeFolder && activeFolder.slides.length > 0) {
       loadSlides(activeFolder.slides);
+    } else {
+      loadSlides([]);
     }
   }, []);
+
+  const isSignboardActive = Boolean(activeFolderId && activeFolder && slides.length > 0);
 
   // 1つ変えたら自動保存（Auto-save）
   const [isSaving, setIsSaving] = useState(false);
@@ -181,7 +181,7 @@ export default function App() {
 
   // 全画面再生
   const handleOpenFullscreen = () => {
-    if (!activeFolderId || slides.length === 0) return;
+    if (!isSignboardActive) return;
     setFullscreenSlides(slides);
     setIsFullscreen(true);
   };
@@ -196,14 +196,25 @@ export default function App() {
       ? [8, 9, 10, 11, 14]
       : [];
 
-  const disabledStepReasons: Partial<Record<StepNumber, string>> = {
-    5: 'ポスター形式では「5. 背景」は選択できません',
-    8: 'タイル形式・背景画像専用では「8. 写真・画像」は選択できません',
-    9: '背景画像・映像専用では「9. タイトル」は選択できません',
-    10: '背景画像・映像専用では「10. 説明やキャッチフレーズ」は選択できません',
-    11: 'ポスター形式・背景画像専用では「11. メニュー」は選択できません',
-    14: '背景画像・映像専用では「14. 文字のアニメーション」は選択できません',
-  };
+  const disabledStepReasons: Partial<Record<StepNumber, string>> =
+    currentSlide?.layoutStyle === 'card-grid'
+      ? {
+          8: '「タイル形式」では看板全体写真を使わないため「8」は選択できません（商品写真は「11」で設定）',
+        }
+      : currentSlide?.layoutStyle === 'poster-hero'
+      ? {
+          5: '「ポスター形式」では「8」の写真を背景全面に使うため「5. 背景の色・模様」は選択できません',
+          11: '「ポスター形式」ではメニュー一覧を使わないため「11. 商品・メニュー」は選択できません',
+        }
+      : currentSlide?.layoutStyle === 'media-only'
+      ? {
+          8: '「背景画像・映像専用」では背景のみ表示するため「8. 看板写真」は選択できません（画像・映像は「5」で設定）',
+          9: '「背景画像・映像専用」では文字を使わないため「9. タイトル」は選択できません',
+          10: '「背景画像・映像専用」では文字を使わないため「10. 説明・キャッチフレーズ」は選択できません',
+          11: '「背景画像・映像専用」ではメニューを使わないため「11. 商品・メニュー」は選択できません',
+          14: '「背景画像・映像専用」では文字を使わないため「14. 文字の動く効果」は選択できません',
+        }
+      : {};
 
   const wizardContainerRef = useRef<HTMLDivElement>(null);
 
@@ -241,7 +252,7 @@ export default function App() {
 
   // 次のページへ進む（無効ステップは自動スキップ）
   const handleNextStep = () => {
-    if (currentStepNumber === 1 && !activeFolderId) {
+    if (currentStepNumber === 1 && !isSignboardActive) {
       // 看板未作成・未選択時は進めない
       return;
     }
@@ -273,7 +284,7 @@ export default function App() {
         currentStepNumber={currentStepNumber}
         totalSteps={totalSteps}
         onSelectStepNumber={(num) => {
-          if (!activeFolderId && num > 1) return;
+          if (!isSignboardActive && num > 1) return;
           if (disabledSteps.includes(num)) return;
           setCurrentStepNumber(num);
         }}
@@ -284,8 +295,8 @@ export default function App() {
         isSaving={isSaving}
         isSaved={isSaved}
         currentSlideIndex={currentSlideIndex}
-        slidesCount={slides.length}
-        isFolderReady={!!activeFolderId && slides.length > 0}
+        slidesCount={isSignboardActive ? slides.length : 0}
+        isFolderReady={isSignboardActive}
         onSelectSlideIndex={setCurrentSlideIndex}
         onAddSlide={addSlide}
         onUndo={undo}
@@ -336,8 +347,8 @@ export default function App() {
 
           {/* 右側 / 下部：看板プレビュー */}
           <div className={`${isWideLayout ? 'lg:w-[400px] xl:w-[460px] 2xl:w-[500px]' : 'w-full max-w-xl mx-auto'} flex flex-col shrink-0`}>
-            <div className={`${isWideLayout ? 'sticky top-16 h-[calc(100vh-140px)]' : 'h-[640px] sm:h-[740px] max-h-[85vh] min-h-[480px]'} flex flex-col`}>
-                {activeFolderId ? (
+            <div className={`${isWideLayout ? 'sticky top-16 h-[calc(100vh-156px)]' : 'h-[min(74vh,640px)] min-h-[380px]'} flex flex-col`}>
+                {isSignboardActive ? (
                   <PreviewPanel
                     currentSlide={currentSlide}
                     slidesCount={slides.length}
@@ -358,7 +369,7 @@ export default function App() {
                       看板が選択されていません
                     </span>
                     <p className="text-xs text-slate-400">
-                      上のフォームから看板を作成または選択すると、ここにプレビューが表示されます。
+                      「1」から新しい看板を作成するか、保存済みの看板を開くとここにプレビューが表示されます。
                     </p>
                   </div>
                 )}
@@ -402,10 +413,10 @@ export default function App() {
           <button
             type="button"
             onClick={handleNextStep}
-            disabled={currentStepNumber === 1 && !activeFolderId}
-            title={currentStepNumber === 1 && !activeFolderId ? '看板の名前を入力して新しく作成してください' : ''}
+            disabled={currentStepNumber === 1 && !isSignboardActive}
+            title={currentStepNumber === 1 && !isSignboardActive ? '看板の名前を入力して新しく作成してください' : ''}
             className={`px-5 sm:px-7 py-2.5 sm:py-3 rounded-2xl font-black text-sm sm:text-base flex items-center gap-1.5 transition-all shadow-md active:scale-95 text-white ${
-              currentStepNumber === 1 && !activeFolderId
+              currentStepNumber === 1 && !isSignboardActive
                 ? 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-60 shadow-none'
                 : currentStepNumber === totalSteps
                 ? 'bg-emerald-600 hover:bg-emerald-700 cursor-pointer'
@@ -413,7 +424,7 @@ export default function App() {
             }`}
           >
             <span>
-              {currentStepNumber === 1 && !activeFolderId
+              {currentStepNumber === 1 && !isSignboardActive
                 ? '看板を作ると進めます'
                 : currentStepNumber === totalSteps
                 ? '全画面で再生'

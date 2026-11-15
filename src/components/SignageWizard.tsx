@@ -873,12 +873,12 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
 
                     <div className="pt-1.5 border-t border-slate-100 space-y-1 text-center">
                       {(isTileTemplate || isPosterTemplate || isMediaOnlyTemplate) && (
-                        <div className="text-[10px] font-black text-rose-600 leading-tight">
+                        <div className="text-[10px] font-black text-rose-600 leading-relaxed bg-rose-50/80 border border-rose-200 rounded-lg px-2 py-1">
                           {isTileTemplate
-                            ? '※３「縦書き」・８「看板写真」は選択不可'
+                            ? '※ ３「縦書き」・８「看板写真」は選択不可'
                             : isPosterTemplate
-                            ? '※ 5「背景」・11「メニュー」は選択不可'
-                            : '※ 3「文字の向き」・5「背景の模様や色」・8〜11・14は選択不可'}
+                            ? '※ ５「看板の背景」・１１「商品メニュー」は選択不可（自動スキップ）'
+                            : '※ ８〜１１・１４は選択不可（自動スキップ）／３「文字の向き」・５「模様や色」も選択不可'}
                         </div>
                       )}
                       {isMediaOnlyTemplate && isSelected && (
@@ -967,11 +967,11 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               </span>
               {isMediaOnlyMode ? (
                 <p className="text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3.5 py-2">
-                  ※「背景画像・映像専用」を選択中のため、「横書き・縦書き」は選択できません。
+                  ※「背景画像・映像専用」では文字を使わないため、3番の「文字の向き（横書き・縦書き）」は選択できません。
                 </p>
               ) : isTileMode ? (
                 <p className="text-xs font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2">
-                  ※ タイル形式を選択中のため、「縦書き」は選択できません（横書き専用）。
+                  ※「タイル形式」では横書きレイアウトのみ使用するため、3番の「縦書き」は選択できません。
                 </p>
               ) : null}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1107,10 +1107,10 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
           isPosterMode ? (
             <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
               <div className="text-base font-black text-slate-700">
-                「ポスター形式」を選択中のため、5番の背景は選択できません
+                「ポスター形式」を選択中のため、5番の背景（色・模様）は選択できません
               </div>
               <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                ポスター形式は「8」で選んだ看板写真を背景全体に使用します。背景写真を変更したい場合は「8」から設定してください。
+                ポスター形式では「8. 看板写真」で選んだ写真を背景全面に表示します。背景写真を変更したい場合は8番から設定してください。
               </p>
             </div>
           ) : (
@@ -1177,7 +1177,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
             {isMediaOnlyMode ? (
               <div className="relative z-20 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 text-rose-800 shadow-sm">
                 <div className="text-xs sm:text-sm font-black leading-relaxed">
-                  ※「背景画像・映像専用」を選択中のため、背景の模様や色は選択できません。上の枠から写真や動画ファイルを添付してください。
+                  ※「背景画像・映像専用」を選択中のため、下の「背景の模様・色」は選択できません。上の枠から写真や動画ファイルを添付してください。
                 </div>
                 {Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) && (
                   <button
@@ -1277,28 +1277,6 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                             bgGradient: undefined,
                             bgCustomImage: undefined,
                             bgVideoUrl: undefined,
-                          });
-                        }}
-                        className="w-0 h-0 opacity-0"
-                      />
-                    </label>
-
-                    {/* ピックアップ色（アクセント色・強調色） */}
-                    <label className="px-3.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl cursor-pointer flex items-center gap-1.5 text-xs font-bold text-slate-800 transition-colors shadow-2xs" title="ピックアップ色（アクセント色・強調色）を変更">
-                      <div
-                        className="w-3.5 h-3.5 rounded-full border border-slate-400 shrink-0 shadow-2xs"
-                        style={{ backgroundColor: currentSlide.accentColor || '#f59e0b' }}
-                      />
-                      <span>ピックアップ色</span>
-                      <input
-                        type="color"
-                        disabled={Boolean(currentSlide.bgCustomImage || currentSlide.bgVideoUrl) || isMediaOnlyMode}
-                        value={currentSlide.accentColor?.startsWith('#') ? currentSlide.accentColor : '#f59e0b'}
-                        onChange={(e) => {
-                          const color = e.target.value;
-                          addRecentColor(color);
-                          onUpdateSlide({
-                            accentColor: color,
                           });
                         }}
                         className="w-0 h-0 opacity-0"
@@ -1500,6 +1478,40 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                   max={20}
                 />
               </div>
+
+              {/* ピックアップ色（アクセント色・強調色） */}
+              <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <span className="block text-xs font-black text-slate-800">
+                    ピックアップ色（アクセント・強調色）：
+                  </span>
+                  <span className="block text-[11px] font-medium text-slate-500">
+                    バッジや強調パーツに使われる色を選べます
+                  </span>
+                </div>
+                <label
+                  className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl cursor-pointer flex items-center gap-2 text-xs font-bold text-slate-800 transition-colors shadow-2xs shrink-0"
+                  title="ピックアップ色（アクセント色・強調色）を変更"
+                >
+                  <div
+                    className="w-4 h-4 rounded-full border border-slate-400 shrink-0 shadow-2xs"
+                    style={{ backgroundColor: currentSlide.accentColor || '#f59e0b' }}
+                  />
+                  <span>色を選ぶ</span>
+                  <input
+                    type="color"
+                    value={currentSlide.accentColor?.startsWith('#') ? currentSlide.accentColor : '#f59e0b'}
+                    onChange={(e) => {
+                      const color = e.target.value;
+                      addRecentColor(color);
+                      onUpdateSlide({
+                        accentColor: color,
+                      });
+                    }}
+                    className="w-0 h-0 opacity-0"
+                  />
+                </label>
+              </div>
             </div>
           </div>
         )}
@@ -1517,8 +1529,8 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               </div>
               <p className="text-xs font-bold text-slate-500 leading-relaxed">
                 {isTileMode
-                  ? 'タイル形式では各商品タイルの画像のみを使用します。商品の写真は「11」の商品リストから設定してください。'
-                  : '背景画像・映像専用では文字やメニュー写真を使用しません。背景の画像・映像は2番（または全体設定）で設定してください。'}
+                  ? 'タイル形式では各商品カードの写真のみを表示します。商品の写真は「11. 商品・メニュー」から設定してください。'
+                  : '背景画像・映像専用では看板写真を使いません。背景の画像・映像は「5. 看板の背景」から添付してください。'}
               </p>
             </div>
           ) : (
@@ -1962,13 +1974,17 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         {/* ステップ 11: おすすめ商品やメニューを入れてください */}
         {/* ========================================================= */}
         {currentStepNumber === 11 && (
-          isPosterMode ? (
+          isPosterMode || isMediaOnlyMode ? (
             <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
               <div className="text-base font-black text-slate-700">
-                「ポスター形式」を選択中のため、11番のメニューは選択できません
+                {isPosterMode
+                  ? '「ポスター形式」を選択中のため、11番の商品は選択できません'
+                  : '「背景画像・映像専用」を選択中のため、11番の商品は選択できません'}
               </div>
               <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                ポスター形式は大きな背景写真（8番）とタイトル・説明文・フッターで構成されます。
+                {isPosterMode
+                  ? 'ポスター形式は「8. 看板写真」を大きく背景に表示し、タイトル・説明文・フッターで構成されます。'
+                  : '背景画像・映像専用ではメニュー商品を使用しません。「5. 看板の背景」で設定した画像・映像のみを表示します。'}
               </p>
             </div>
           ) : (
@@ -2585,10 +2601,10 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
           isMediaOnlyMode ? (
             <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
               <div className="text-base font-black text-slate-700">
-                「背景画像・映像専用」を選択中のため、14番の文字アニメーションは選択できません
+                「背景画像・映像専用」を選択中のため、14番の「文字の動く効果」は選択できません
               </div>
               <p className="text-xs font-bold text-slate-500 leading-relaxed">
-                背景画像・映像専用では文字を使用しないため、アニメーション効果は適用されません。
+                背景画像・映像専用では文字を使用せず、「5. 看板の背景」で設定した画像・映像のみを表示します。
               </p>
             </div>
           ) : (

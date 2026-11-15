@@ -36,23 +36,36 @@ export function useSignageFolders(onError: (err: AppError) => void) {
     if (typeof window === 'undefined') return null;
     try {
       const saved = localStorage.getItem(ACTIVE_FOLDER_STORAGE_KEY);
-      if (saved) return saved;
+      const savedFoldersRaw = localStorage.getItem(FOLDERS_STORAGE_KEY);
+      if (saved && savedFoldersRaw) {
+        const parsedFolders = JSON.parse(savedFoldersRaw);
+        if (Array.isArray(parsedFolders) && parsedFolders.some((f: SignageFolder) => f && f.id === saved)) {
+          return saved;
+        }
+      }
+      localStorage.removeItem(ACTIVE_FOLDER_STORAGE_KEY);
     } catch {
       // ignore
     }
     return null;
   });
 
-  // activeFolderIdの変更をローカルストレージへ保存
+  // 存在しないフォルダIDを指していた場合は自動的にnullへ補正し、ローカルストレージへ同期
   useEffect(() => {
-    if (activeFolderId) {
-      try {
-        localStorage.setItem(ACTIVE_FOLDER_STORAGE_KEY, activeFolderId);
-      } catch {
-        // ignore
-      }
+    if (activeFolderId && !folders.some((f) => f.id === activeFolderId)) {
+      setActiveFolderId(null);
+      return;
     }
-  }, [activeFolderId]);
+    try {
+      if (activeFolderId) {
+        localStorage.setItem(ACTIVE_FOLDER_STORAGE_KEY, activeFolderId);
+      } else {
+        localStorage.removeItem(ACTIVE_FOLDER_STORAGE_KEY);
+      }
+    } catch {
+      // ignore
+    }
+  }, [activeFolderId, folders]);
 
   // 容量エラーハンドラ共通化
   const handleStorageError = useCallback((err: unknown, contextTitle: string) => {

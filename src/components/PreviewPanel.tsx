@@ -51,19 +51,23 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   // スマホ横画面時のフォントパネル折りたたみ状態
   const [isFontBarOpen, setIsFontBarOpen] = useState<boolean>(!isMobileLandscape);
 
-  // コンテナサイズに応じた 9:16 / 16:9 自動フィットスケールの計算（レスポンシブ・見切れゼロ最大表示）
+  // コンテナサイズに応じた 9:16 / 16:9 自動フィットスケールの計算（上下左右見切れゼロ保証）
   const calculateFitScale = useCallback(() => {
-    if (!displayContainerRef.current) return;
-    const { clientWidth, clientHeight } = displayContainerRef.current;
-    
-    // コンテナの内側マージンを最小限にして看板の表示サイズを最大化
-    const paddingX = isMobileLandscape ? 8 : 12;
-    const paddingY = slidesCount > 1 
-      ? (isMobileLandscape ? 32 : 44) 
-      : (isMobileLandscape ? 8 : 14);
+    const el = displayContainerRef.current;
+    if (!el) return;
+    const { clientWidth, clientHeight } = el;
+    const styles = window.getComputedStyle(el);
+    const cssPadX = (parseFloat(styles.paddingLeft) || 0) + (parseFloat(styles.paddingRight) || 0);
+    const cssPadY = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
 
-    const availableWidth = Math.max(80, clientWidth - paddingX);
-    const availableHeight = Math.max(100, clientHeight - paddingY);
+    // 枠線・シャドウ・下部ページネーション操作部を含めて確実に見切れない余白を確保
+    const safeExtraX = isMobileLandscape ? 8 : 16;
+    const safeExtraY = slidesCount > 1
+      ? (isMobileLandscape ? 36 : 48)
+      : (isMobileLandscape ? 10 : 18);
+
+    const availableWidth = Math.max(80, clientWidth - cssPadX - safeExtraX);
+    const availableHeight = Math.max(100, clientHeight - cssPadY - safeExtraY);
 
     const isLandscape = currentSlide.aspect === '16:9' || currentSlide.aspect === 'horizontal';
     const baseW = isLandscape ? 960 : 540;
@@ -73,9 +77,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     const scaleByW = availableWidth / baseW;
     const scaleByH = availableHeight / baseH;
     
-    // コンテナ全体に最も大きく美しく収まる比率を適用
+    // コンテナ全体に確実に収まる比率を適用
     const fit = Math.min(scaleByW, scaleByH);
-    const clampedFit = Math.max(0.15, Math.min(fit, 2.0)); // 0.15 ～ 2.0倍の範囲
+    const clampedFit = Math.max(0.15, Math.min(fit, 2.0));
     
     setAutoScale(clampedFit);
     if (scaleMode === 'auto') {
@@ -91,15 +95,17 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       calculateFitScale();
     });
     observer.observe(displayContainerRef.current);
+    window.addEventListener('resize', calculateFitScale);
 
-    // 初回マウント時やスライド切替時に強制再計算
+    // 初回マウント時やスライド・フォントバー切替時に強制再計算
     const timer = setTimeout(calculateFitScale, 50);
 
     return () => {
       observer.disconnect();
+      window.removeEventListener('resize', calculateFitScale);
       clearTimeout(timer);
     };
-  }, [calculateFitScale, currentSlide.id]);
+  }, [calculateFitScale, currentSlide.id, isFontBarOpen]);
 
   // 横画面切替時にフォントバーの開閉を自動連動
   useEffect(() => {
@@ -265,7 +271,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       */}
       <div
         ref={displayContainerRef}
-        className="w-full flex-1 min-h-[440px] sm:min-h-[540px] bg-slate-100/70 rounded-2xl sm:rounded-3xl border border-slate-200 flex flex-col items-center justify-center overflow-hidden shadow-inner relative p-1.5 sm:p-2.5"
+        className="w-full flex-1 min-h-0 bg-slate-100/70 rounded-2xl sm:rounded-3xl border border-slate-200 flex flex-col items-center justify-center overflow-hidden shadow-inner relative p-2"
       >
         <div 
           key={`${currentSlide.id}-${replayKey}`}
