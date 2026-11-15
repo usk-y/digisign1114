@@ -474,7 +474,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
     slide.headline ? (
       <div
         onClick={() => onSelectTextTarget?.('headline')}
-        className={`p-0.5 sm:p-1 min-w-0 max-w-[50%] shrink max-h-full h-full overflow-hidden flex flex-col items-center ${
+        className={`p-0.5 sm:p-1 min-w-0 max-w-full shrink max-h-full h-full flex flex-col items-center ${
           slide.headlineAlign === 'left'
             ? 'justify-start'
             : slide.headlineAlign === 'right'
@@ -489,7 +489,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
             variants={getTextAnimationVariants()}
             initial="initial"
             animate="animate"
-            className={`h-full min-w-0 max-w-full overflow-hidden flex flex-col items-center ${
+            className={`h-full min-w-0 max-w-full flex flex-col items-center ${
               slide.headlineAlign === 'left'
                 ? 'justify-start'
                 : slide.headlineAlign === 'right'
@@ -533,7 +533,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
     slide.subheadline ? (
       <div
         onClick={() => onSelectTextTarget?.('subheadline')}
-        className={`p-0.5 sm:p-1 min-w-0 max-w-[50%] shrink max-h-full h-full overflow-hidden flex flex-col items-center ${
+        className={`p-0.5 sm:p-1 min-w-0 max-w-full shrink max-h-full h-full flex flex-col items-center ${
           slide.subheadlineAlign === 'left'
             ? 'justify-start'
             : slide.subheadlineAlign === 'right'
@@ -548,7 +548,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
             variants={getTextAnimationVariants()}
             initial="initial"
             animate="animate"
-            className={`h-full min-w-0 max-w-full overflow-hidden flex flex-col items-center ${
+            className={`h-full min-w-0 max-w-full flex flex-col items-center ${
               slide.subheadlineAlign === 'left'
                 ? 'justify-start'
                 : slide.subheadlineAlign === 'right'
