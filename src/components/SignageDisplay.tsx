@@ -581,8 +581,8 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
   // 縦書き大見出し・サブコピー共通レンダー
   const renderVerticalCopyPair = (keyPrefix: string, gapPx: number) => (
     <div
-      className="flex-1 min-h-0 w-full flex flex-row-reverse items-stretch justify-center h-full max-h-full overflow-hidden"
-      style={{ gap: `${gapPx}px` }}
+      className="flex-1 min-h-0 w-full flex flex-row-reverse items-center justify-center h-full max-h-full overflow-hidden px-1"
+      style={{ gap: `${Math.max(12, gapPx)}px` }}
     >
       {renderVerticalHeadline(keyPrefix)}
       {renderVerticalSubheadline(keyPrefix)}
