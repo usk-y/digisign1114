@@ -15,7 +15,6 @@ import { handleImageError } from '../utils/imageFallback';
 interface SignageDisplayProps {
   slide: SignageSlide;
   scale?: number;
-  interactive?: boolean;
   isFullscreen?: boolean;
   selectedTextTarget?: TextTarget;
   onSelectTextTarget?: (target: TextTarget) => void;
@@ -47,8 +46,14 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
           }
         })
         .catch(() => {
-          if (isMounted) setQrImgError(true);
+          if (isMounted) {
+            setQrDataUrl('');
+            setQrImgError(true);
+          }
         });
+    } else {
+      setQrDataUrl('');
+      setQrImgError(false);
     }
     return () => {
       isMounted = false;
@@ -359,11 +364,12 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
 
   // メニュー商品数（通常最大6品・タイル形式最大12品）に応じた動的レイアウト設定
   const isTileMode = slide.layoutStyle === 'card-grid';
+  const isMediaOnlyMode = slide.layoutStyle === 'media-only';
   const itemCount = slide.menuItems?.length || 0;
   const isDenseMenu = itemCount >= 5;
   const isMediumMenu = itemCount === 4;
 
-  const isVertical = !isTileMode && slide.writingMode === 'vertical';
+  const isVertical = !isTileMode && !isMediaOnlyMode && slide.writingMode === 'vertical';
   const rawItems = slide.menuItems || [];
   const visibleItems = rawItems.slice(0, isTileMode ? 12 : 6);
   const visibleCount = visibleItems.length;
@@ -469,18 +475,21 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
     );
   };
 
-  // 縦書き大見出し・サブコピー個別レンダー
-  const renderVerticalHeadline = (keyPrefix: string, extraClass = '') =>
-    slide.headline ? (
+  // 縦書き大見出し・サブコピー個別レンダー（flex-colによるvertical-rl幅0崩れ防止のためflex-row＋明示トラック幅で配置）
+  const getVerticalItemsAlignClass = (align?: 'left' | 'center' | 'right') =>
+    align === 'left' ? 'items-start' : align === 'right' ? 'items-end' : 'items-center';
+
+  const renderVerticalHeadline = (
+    keyPrefix: string,
+    trackClass = 'flex-1 min-w-0',
+    horizontalJustifyClass = 'justify-center'
+  ) => {
+    if (!slide.headline) return null;
+    const vAlignClass = getVerticalItemsAlignClass(slide.headlineAlign);
+    return (
       <div
         onClick={() => onSelectTextTarget?.('headline')}
-        className={`p-0.5 sm:p-1 min-w-0 max-w-full shrink max-h-full h-full flex flex-col items-center ${
-          slide.headlineAlign === 'left'
-            ? 'justify-start'
-            : slide.headlineAlign === 'right'
-            ? 'justify-end'
-            : 'justify-center'
-        } mr-0 ${extraClass} ${getSelectableClass('headline')}`}
+        className={`relative p-0.5 sm:p-1 min-w-0 max-w-full max-h-full h-full overflow-hidden flex flex-row ${vAlignClass} ${horizontalJustifyClass} ${trackClass} ${getSelectableClass('headline')}`}
         title="クリックして大見出しの書体を変更"
       >
         <AnimatePresence mode="wait">
@@ -489,13 +498,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
             variants={getTextAnimationVariants()}
             initial="initial"
             animate="animate"
-            className={`h-full min-w-0 max-w-full flex flex-col items-center ${
-              slide.headlineAlign === 'left'
-                ? 'justify-start'
-                : slide.headlineAlign === 'right'
-                ? 'justify-end'
-                : 'justify-center'
-            }`}
+            className={`h-full max-w-full max-h-full flex flex-row ${vAlignClass} ${horizontalJustifyClass}`}
           >
             <h1
               className="font-black tracking-tight drop-shadow-sm whitespace-pre-line break-words"
@@ -522,24 +525,25 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
           </motion.div>
         </AnimatePresence>
         {selectedTextTarget === 'headline' && (
-          <div className="inline-flex items-center gap-1 text-[10px] bg-amber-400 text-slate-950 font-bold px-1.5 py-0.5 rounded-full mt-1 shrink-0 whitespace-nowrap">
+          <div className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-1 text-[10px] bg-amber-400 text-slate-950 font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shadow-xs">
             <Type className="w-3 h-3" /> 見出し変更中
           </div>
         )}
       </div>
-    ) : null;
+    );
+  };
 
-  const renderVerticalSubheadline = (keyPrefix: string, extraClass = '') =>
-    slide.subheadline ? (
+  const renderVerticalSubheadline = (
+    keyPrefix: string,
+    trackClass = 'flex-1 min-w-0',
+    horizontalJustifyClass = 'justify-center'
+  ) => {
+    if (!slide.subheadline) return null;
+    const vAlignClass = getVerticalItemsAlignClass(slide.subheadlineAlign);
+    return (
       <div
         onClick={() => onSelectTextTarget?.('subheadline')}
-        className={`p-0.5 sm:p-1 min-w-0 max-w-full shrink max-h-full h-full flex flex-col items-center ${
-          slide.subheadlineAlign === 'left'
-            ? 'justify-start'
-            : slide.subheadlineAlign === 'right'
-            ? 'justify-end'
-            : 'justify-center'
-        } ${extraClass} ${getSelectableClass('subheadline')}`}
+        className={`relative p-0.5 sm:p-1 min-w-0 max-w-full max-h-full h-full overflow-hidden flex flex-row ${vAlignClass} ${horizontalJustifyClass} ${trackClass} ${getSelectableClass('subheadline')}`}
         title="クリックして説明文の書体を変更"
       >
         <AnimatePresence mode="wait">
@@ -548,16 +552,10 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
             variants={getTextAnimationVariants()}
             initial="initial"
             animate="animate"
-            className={`h-full min-w-0 max-w-full flex flex-col items-center ${
-              slide.subheadlineAlign === 'left'
-                ? 'justify-start'
-                : slide.subheadlineAlign === 'right'
-                ? 'justify-end'
-                : 'justify-center'
-            }`}
+            className={`h-full max-w-full max-h-full flex flex-row ${vAlignClass} ${horizontalJustifyClass}`}
           >
             <p
-              className="font-medium opacity-85 whitespace-pre-line break-words w-full"
+              className="font-medium opacity-85 whitespace-pre-line break-words"
               style={{
                 fontFamily: getTargetFont('subheadline'),
                 color: getTargetTextColor('subheadline'),
@@ -576,18 +574,35 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
           </motion.div>
         </AnimatePresence>
       </div>
-    ) : null;
+    );
+  };
 
-  // 縦書き大見出し・サブコピー共通レンダー
-  const renderVerticalCopyPair = (keyPrefix: string, gapPx: number) => (
-    <div
-      className="flex-1 min-h-0 w-full flex flex-row-reverse items-center justify-center h-full max-h-full overflow-hidden px-1"
-      style={{ gap: `${Math.max(12, gapPx)}px` }}
-    >
-      {renderVerticalHeadline(keyPrefix)}
-      {renderVerticalSubheadline(keyPrefix)}
-    </div>
-  );
+  // 縦書き大見出し・サブコピー共通レンダー（両方ある場合は左右トラックに分割して衝突・重なりを完全防止）
+  const renderVerticalCopyPair = (keyPrefix: string, gapPx: number) => {
+    const hasHeadline = Boolean(slide.headline);
+    const hasSubheadline = Boolean(slide.subheadline);
+    if (!hasHeadline && !hasSubheadline) return null;
+
+    return (
+      <div
+        className="flex-1 min-h-0 w-full flex flex-row-reverse items-stretch justify-center h-full max-h-full overflow-hidden px-1"
+        style={{ gap: `${Math.max(10, gapPx)}px` }}
+      >
+        {hasHeadline &&
+          renderVerticalHeadline(
+            keyPrefix,
+            hasSubheadline ? 'flex-[1.25] min-w-0' : 'flex-1 min-w-0',
+            hasSubheadline ? 'justify-start' : 'justify-center'
+          )}
+        {hasSubheadline &&
+          renderVerticalSubheadline(
+            keyPrefix,
+            hasHeadline ? 'flex-1 min-w-0' : 'flex-1 min-w-0',
+            hasHeadline ? 'justify-end' : 'justify-center'
+          )}
+      </div>
+    );
+  };
 
   return (
     /* 外側コンテナ：スケール後の正確なピクセル専有サイズを確保 */
@@ -1117,17 +1132,34 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                   const hasSubheadline = Boolean(slide.subheadline && subheadlineH === slot);
                   if (!hasHeadline && !hasSubheadline) return null;
                   const gapPx = Math.max(14, Math.round((effectiveHeadlinePt || 30) * 0.6));
-                  const justifyClass =
-                    slot === 'left' ? 'justify-end' : slot === 'right' ? 'justify-start' : 'justify-center';
+                  const bothInSlot = hasHeadline && hasSubheadline;
+                  const slotWrapperPos =
+                    bothInSlot && slot === 'left'
+                      ? 'inset-y-0 left-0 w-[85%]'
+                      : bothInSlot && slot === 'right'
+                      ? 'inset-y-0 right-0 w-[85%]'
+                      : 'inset-0';
+                  const singleJustify =
+                    slot === 'left' ? 'justify-start' : slot === 'right' ? 'justify-end' : 'justify-center';
 
                   return (
                     <div
                       key={slot}
-                      className={`absolute inset-0 flex flex-row-reverse items-stretch pointer-events-none px-1 ${justifyClass}`}
+                      className={`absolute ${slotWrapperPos} flex flex-row-reverse items-stretch pointer-events-none px-1`}
                       style={{ gap: `${gapPx}px` }}
                     >
-                      {hasHeadline && renderVerticalHeadline('poster-v', 'pointer-events-auto')}
-                      {hasSubheadline && renderVerticalSubheadline('poster-v', 'pointer-events-auto')}
+                      {hasHeadline &&
+                        renderVerticalHeadline(
+                          `poster-v-${slot}`,
+                          bothInSlot ? 'flex-[1.25] min-w-0 pointer-events-auto' : 'flex-1 min-w-0 pointer-events-auto',
+                          bothInSlot ? 'justify-start' : singleJustify
+                        )}
+                      {hasSubheadline &&
+                        renderVerticalSubheadline(
+                          `poster-v-${slot}`,
+                          'flex-1 min-w-0 pointer-events-auto',
+                          bothInSlot ? 'justify-end' : singleJustify
+                        )}
                     </div>
                   );
                 })}
@@ -1960,7 +1992,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
           )}
 
           {/* 足元部：QRコード & 足元の文字 */}
-          {(slide.footerNote || slide.showQrCode || slide.qrCustomImageUrl) && (
+          {(slide.footerNote || slide.showQrCode) && (
             <div
               className={`shrink-0 ${
                 isLandscape ? 'pt-0 pb-0 mt-0.5' : 'pt-1.5 pb-0.5 mt-auto'
@@ -1995,7 +2027,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
               )}
 
               {/* QRコードカード（添付画像優先 ＆ 完全オフライン対応・外部通信不要） */}
-              {(slide.showQrCode || slide.qrCustomImageUrl) && (
+              {slide.showQrCode && (
                 <div className={`flex items-center gap-2 shrink-0 bg-white text-slate-950 ${
                   isLandscape ? 'px-2 py-0.5 rounded-xl max-w-[145px]' : 'p-2 rounded-2xl max-w-[155px]'
                 } shadow-md border border-slate-300 z-10`}>

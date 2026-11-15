@@ -29,6 +29,15 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({
     setProgress(0);
   }, [initialIndex]);
 
+  // 操作パネルの自動非表示タイマー（PCマウス・スマホタップ両対応）
+  useEffect(() => {
+    if (!showControls) return;
+    const timer = setTimeout(() => {
+      setShowControls(false);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [showControls]);
+
   // 画面全体に比率（縦型540x960、横型960x540）を美しくフィットさせるスケール計算
   useEffect(() => {
     const handleResize = () => {
@@ -45,6 +54,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({
 
   // Escキーで閉じる、左右キーでスライド移動
   useEffect(() => {
+    if (slides.length === 0) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
@@ -62,7 +72,7 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({
 
   // スライド切り替えタイマーとプログレスバー
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || slides.length === 0) return;
 
     const intervalTime = 50; // 50msごとにプログレス更新
     const step = (intervalTime / slideDuration) * 100;
@@ -80,12 +90,15 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({
     return () => clearInterval(timer);
   }, [currentIndex, isPaused, slideDuration, slides.length]);
 
+  if (!currentSlide) return null;
+
   return (
     <div
-      className="fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden cursor-none hover:cursor-default"
-      onMouseMove={() => {
-        setShowControls(true);
-      }}
+      className={`fixed inset-0 z-50 bg-black flex items-center justify-center overflow-hidden ${
+        showControls ? 'cursor-default' : 'cursor-none hover:cursor-default'
+      }`}
+      onMouseMove={() => setShowControls(true)}
+      onClick={() => setShowControls((prev) => !prev)}
       onMouseLeave={() => setShowControls(false)}
     >
       {/* 上部プログレスバー（残り秒数の可視化） */}
@@ -99,44 +112,48 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({
       {/* 看板フルスクリーン本体（実際のモニター表示とサンプル画面の文字比率が100%完全一致） */}
       <div className="w-full h-full flex items-center justify-center overflow-hidden">
         <SignageDisplay 
-          key={`${currentSlide?.id || currentIndex}-${currentIndex}`} 
+          key={`${currentSlide.id || currentIndex}-${currentIndex}`} 
           slide={currentSlide} 
           scale={scale} 
           isFullscreen={true} 
         />
       </div>
 
-      {/* ホバー時のみ現れるスマートコントローラー */}
+      {/* ホバー・タップ時に現れるスマートコントローラー */}
       <div
+        onClick={(e) => e.stopPropagation()}
         className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-slate-900/80 backdrop-blur-md px-4 py-2 rounded-2xl border border-slate-700/80 shadow-2xl transition-opacity duration-300 ${
           showControls ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       >
         <button
+          type="button"
           onClick={() => {
             setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
             setProgress(0);
           }}
-          className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           title="前のスライド"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
 
         <button
+          type="button"
           onClick={() => setIsPaused(!isPaused)}
-          className="p-2 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors"
+          className="p-2 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors cursor-pointer"
           title={isPaused ? '再生再開' : '一時停止'}
         >
           {isPaused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4 fill-current" />}
         </button>
 
         <button
+          type="button"
           onClick={() => {
             setCurrentIndex((prev) => (prev + 1) % slides.length);
             setProgress(0);
           }}
-          className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+          className="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
           title="次のスライド"
         >
           <ChevronRight className="w-5 h-5" />
@@ -147,8 +164,9 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({
         </div>
 
         <button
+          type="button"
           onClick={onClose}
-          className="p-1.5 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-slate-800 transition-colors ml-2"
+          className="p-1.5 rounded-lg text-slate-300 hover:text-rose-400 hover:bg-slate-800 transition-colors ml-2 cursor-pointer"
           title="全画面を閉じる (Esc)"
         >
           <X className="w-5 h-5" />
@@ -157,8 +175,12 @@ export const FullscreenPlayer: React.FC<FullscreenPlayerProps> = ({
 
       {/* 右上の閉じるボタン */}
       <button
-        onClick={onClose}
-        className={`absolute top-4 right-4 z-50 p-2.5 rounded-full bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700/80 shadow-lg transition-opacity duration-300 ${
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        className={`absolute top-4 right-4 z-50 p-2.5 rounded-full bg-slate-900/80 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700/80 shadow-lg transition-opacity duration-300 cursor-pointer ${
           showControls ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         title="全画面を閉じる (Esc)"

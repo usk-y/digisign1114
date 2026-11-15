@@ -78,7 +78,6 @@ export function useSignageEditor(onError: (err: AppError) => void) {
   }, [future, slides]);
 
   const [currentSlideIndex, setCurrentSlideIndex] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [replayKey, setReplayKey] = useState<number>(0);
   const [selectedTextTarget, setSelectedTextTarget] = useState<TextTarget>('all');
 
@@ -117,23 +116,36 @@ export function useSignageEditor(onError: (err: AppError) => void) {
       bgColor,
       bgGradient,
       bgPattern,
+      bgAnimation: templateSlide.bgAnimation || 'none',
       bgCustomImage: templateSlide.bgCustomImage || undefined,
       bgVideoUrl: templateSlide.bgVideoUrl || undefined,
       qrCustomImageUrl: templateSlide.qrCustomImageUrl || undefined,
       textColor: templateSlide.textColor || '#ffffff',
       accentColor: templateSlide.accentColor || '#fbbf24',
+      shopNameSize: templateSlide.shopNameSize,
       shopNamePt: templateSlide.shopNamePt,
+      shopNameAlign: templateSlide.shopNameAlign,
+      categoryBadgePt: templateSlide.categoryBadgePt,
+      headlineSize: templateSlide.headlineSize,
       headlinePt: templateSlide.headlinePt,
+      headlineAlign: templateSlide.headlineAlign || 'center',
+      subheadlineSize: templateSlide.subheadlineSize,
       subheadlinePt: templateSlide.subheadlinePt,
+      subheadlineAlign: templateSlide.subheadlineAlign || 'center',
+      menuItemNamePt: templateSlide.menuItemNamePt,
+      menuItemDescPt: templateSlide.menuItemDescPt,
+      menuItemPricePt: templateSlide.menuItemPricePt,
       footerNotePt: templateSlide.footerNotePt,
       shopLogoUrl: templateSlide.shopLogoUrl,
-      subheadlineImages: isTile ? [] : (templateSlide.subheadlineImages || []),
-      subheadlineImageUrl: isTile ? undefined : (templateSlide.subheadlineImageUrl || templateSlide.subheadlineImages?.[0]),
+      subheadlineImages: isTile || isMediaOnly ? [] : (templateSlide.subheadlineImages || []),
+      subheadlineImageUrl: isTile || isMediaOnly ? undefined : (templateSlide.subheadlineImageUrl || templateSlide.subheadlineImages?.[0]),
       headlineHorizontalAlign: templateSlide.headlineHorizontalAlign,
       headlineVerticalAlign: templateSlide.headlineVerticalAlign,
       subheadlineHorizontalAlign: templateSlide.subheadlineHorizontalAlign,
       subheadlineVerticalAlign: templateSlide.subheadlineVerticalAlign,
-      menuItems: isPoster ? [] : ensureDiverseTagColors((templateSlide.menuItems || []).slice(0, maxItems)),
+      menuItems: isPoster || isMediaOnly ? [] : ensureDiverseTagColors((templateSlide.menuItems || []).slice(0, maxItems)),
+      textAnimation: templateSlide.textAnimation || 'slideUp',
+      textAnimationSpeed: templateSlide.textAnimationSpeed || 'normal',
       fontOverrides: {},
       textColorOverrides: templateSlide.textColorOverrides || {},
     });
@@ -238,25 +250,12 @@ export function useSignageEditor(onError: (err: AppError) => void) {
     setReplayKey((k) => k + 1);
   }, []);
 
-  // 自動スライドプレビュー再生（秒数ごとにループ）
-  useEffect(() => {
-    if (!isPlaying || slides.length === 0) return;
-    const duration = (currentSlide?.duration || 10) * 1000;
-    const timer = setTimeout(() => {
-      setCurrentSlideIndex((prev) => (prev + 1) % slides.length);
-      setReplayKey((k) => k + 1);
-    }, duration);
-    return () => clearTimeout(timer);
-  }, [isPlaying, currentSlideIndex, currentSlide?.duration, slides.length]);
-
   return {
     slides,
     setSlides,
     currentSlide,
     currentSlideIndex,
     setCurrentSlideIndex,
-    isPlaying,
-    setIsPlaying,
     replayKey,
     replayAnimation,
     updateCurrentSlide,

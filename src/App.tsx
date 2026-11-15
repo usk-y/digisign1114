@@ -21,7 +21,7 @@ export default function App() {
   const [globalError, setGlobalError] = useState<AppError | null>(null);
 
   // 画面の向き＆デバイス判定フック
-  const { windowWidth } = useOrientation();
+  const { windowWidth, isMobileLandscape } = useOrientation();
 
   // 現在のステップ番号（WIZARD_STEPSの総数に連動）
   const [currentStepNumber, setCurrentStepNumber] = useState<StepNumber>(1);
@@ -49,8 +49,6 @@ export default function App() {
     currentSlide,
     currentSlideIndex,
     setCurrentSlideIndex,
-    isPlaying,
-    setIsPlaying,
     replayKey,
     replayAnimation,
     updateCurrentSlide,
@@ -289,8 +287,6 @@ export default function App() {
           setCurrentStepNumber(num);
         }}
         onOpenFullscreen={handleOpenFullscreen}
-        isPlaying={isPlaying}
-        onTogglePlay={() => setIsPlaying(!isPlaying)}
         onSaveOverwrite={handleSaveOverwrite}
         isSaving={isSaving}
         isSaved={isSaved}
@@ -328,7 +324,6 @@ export default function App() {
               slides={slides}
               folders={folders}
               activeFolderId={activeFolderId}
-              activeFolderName={activeFolder?.name}
               onUpdateSlide={updateCurrentSlide}
               onApplyTemplate={applyTemplate}
               onAddSlide={addSlide}
@@ -359,6 +354,7 @@ export default function App() {
                     selectedTextTarget={selectedTextTarget}
                     onSelectTextTarget={setSelectedTextTarget}
                     onApplyQuickFont={applyQuickFont}
+                    isMobileLandscape={isMobileLandscape}
                   />
                 ) : (
                   <div className="flex-1 bg-slate-50 rounded-3xl border border-slate-200 flex flex-col items-center justify-center p-6 text-center space-y-3">

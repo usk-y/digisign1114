@@ -220,52 +220,47 @@ export function useSignageFolders(onError: (err: AppError) => void) {
     });
 
     let targetId = folderId;
-    let success = false;
+    let nextFolders: SignageFolder[];
 
-    setFolders((prevFolders) => {
-      let nextFolders: SignageFolder[];
-      if (folderId) {
-        nextFolders = prevFolders.map((f) =>
-          f.id === folderId
-            ? {
-                ...f,
-                slides: JSON.parse(JSON.stringify(currentSlides)),
-                updatedAt: nowStr,
-              }
-            : f
-        );
-      } else {
-        if (prevFolders.length >= MAX_FOLDERS) {
-          onError({
-            title: '看板フォルダ数の上限到達',
-            reason: `保存可能な看板フォルダの上限（最大${MAX_FOLDERS}フォルダ）に達しています。`,
-            solution: '不要な看板フォルダを削除してから保存するか、既存のフォルダを選択して上書きしてください。',
-          });
-          return prevFolders;
-        }
-        const newFolder: SignageFolder = {
-          id: `folder-${Date.now()}`,
-          name: `看板フォルダ ${prevFolders.length + 1}`,
-          slides: JSON.parse(JSON.stringify(currentSlides)),
-          updatedAt: nowStr,
-        };
-        nextFolders = [...prevFolders, newFolder];
-        targetId = newFolder.id;
+    if (folderId) {
+      nextFolders = folders.map((f) =>
+        f.id === folderId
+          ? {
+              ...f,
+              slides: JSON.parse(JSON.stringify(currentSlides)),
+              updatedAt: nowStr,
+            }
+          : f
+      );
+    } else {
+      if (folders.length >= MAX_FOLDERS) {
+        onError({
+          title: '看板フォルダ数の上限到達',
+          reason: `保存可能な看板フォルダの上限（最大${MAX_FOLDERS}フォルダ）に達しています。`,
+          solution: '不要な看板フォルダを削除してから保存するか、既存のフォルダを選択して上書きしてください。',
+        });
+        return false;
       }
+      const newFolder: SignageFolder = {
+        id: `folder-${Date.now()}`,
+        name: `看板フォルダ ${folders.length + 1}`,
+        slides: JSON.parse(JSON.stringify(currentSlides)),
+        updatedAt: nowStr,
+      };
+      nextFolders = [...folders, newFolder];
+      targetId = newFolder.id;
+    }
 
-      try {
-        localStorage.setItem(FOLDERS_STORAGE_KEY, JSON.stringify(nextFolders));
-        success = true;
-        return nextFolders;
-      } catch (err: unknown) {
-        handleStorageError(err, '上書き保存の容量上限');
-        return prevFolders;
-      }
-    });
-
-    if (targetId) setActiveFolderId(targetId);
-    return success;
-  }, [onError, handleStorageError]);
+    try {
+      localStorage.setItem(FOLDERS_STORAGE_KEY, JSON.stringify(nextFolders));
+      setFolders(nextFolders);
+      if (targetId) setActiveFolderId(targetId);
+      return true;
+    } catch (err: unknown) {
+      handleStorageError(err, '上書き保存の容量上限');
+      return false;
+    }
+  }, [folders, onError, handleStorageError]);
 
   const clearAllFolders = useCallback(() => {
     try {

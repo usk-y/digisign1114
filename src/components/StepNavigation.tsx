@@ -18,8 +18,6 @@ interface StepNavigationProps {
   totalSteps?: number;
   onSelectStepNumber: (step: StepNumber) => void;
   onOpenFullscreen: () => void;
-  isPlaying: boolean;
-  onTogglePlay: () => void;
   onSaveOverwrite?: () => void;
   isSaving?: boolean;
   isSaved?: boolean;
@@ -43,8 +41,6 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
   totalSteps = 16,
   onSelectStepNumber,
   onOpenFullscreen,
-  isPlaying,
-  onTogglePlay,
   onSaveOverwrite,
   isSaving = false,
   isSaved = false,
@@ -274,14 +270,17 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
           <button
             type="button"
             onClick={onSaveOverwrite}
-            className={`px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl font-bold flex items-center gap-1 text-xs border transition-all cursor-pointer ${
-              isSaving
-                ? 'bg-amber-50 text-amber-800 border-amber-300'
+            disabled={!isFolderReady || slidesCount === 0}
+            className={`px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl font-bold flex items-center gap-1 text-xs border transition-all ${
+              !isFolderReady || slidesCount === 0
+                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed opacity-50'
+                : isSaving
+                ? 'bg-amber-50 text-amber-800 border-amber-300 cursor-pointer'
                 : isSaved
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 cursor-pointer'
+                : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 cursor-pointer'
             }`}
-            title="看板の保存"
+            title={!isFolderReady || slidesCount === 0 ? '保存する看板がありません' : '看板の保存'}
           >
             {isSaving ? (
               <>

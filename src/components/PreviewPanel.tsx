@@ -280,7 +280,6 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
           <SignageDisplay
             slide={currentSlide}
             scale={activeScale}
-            interactive={true}
             selectedTextTarget={selectedTextTarget}
             onSelectTextTarget={onSelectTextTarget}
           />

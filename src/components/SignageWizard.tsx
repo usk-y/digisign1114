@@ -243,7 +243,6 @@ interface SignageWizardProps {
   slides: SignageSlide[];
   folders: SignageFolder[];
   activeFolderId: string | null;
-  activeFolderName?: string;
   onUpdateSlide: (updates: Partial<SignageSlide>) => void;
   onApplyTemplate: (templateSlide: Partial<SignageSlide>) => void;
   onAddSlide: () => void;
@@ -266,7 +265,6 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
   slides,
   folders,
   activeFolderId,
-  activeFolderName,
   onUpdateSlide,
   onApplyTemplate,
   onAddSlide,
@@ -400,7 +398,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
     }
 
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    const validImageExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'heic'];
+    const validImageExts = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'bmp', 'heic', 'heif'];
     const validVideoExts = ['mp4', 'webm', 'mov', 'ogg', 'm4v'];
 
     if (validVideoExts.includes(ext) || file.type.startsWith('video/')) {
@@ -427,7 +425,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
       onError({
         title: '非対応のファイル形式です',
         reason: `「.${ext}」形式のファイルは背景として登録できません。`,
-        solution: '画像（JPG, PNG, WEBP, GIF, SVG, BMP, HEIC）または動画（MP4, WEBM, MOV）を選択してください。',
+        solution: '画像（JPG, PNG, WEBP, GIF, SVG, BMP, HEIC, HEIF）または動画（MP4, WEBM, MOV）を選択してください。',
       });
       e.target.value = '';
     }
@@ -543,7 +541,6 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                     const name = newFolderName.trim() || `看板 ${folders.length + 1}`;
                     onCreateFolder(name);
                     setNewFolderName('');
-                    onGoToStep(2);
                   }}
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-base rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer whitespace-nowrap"
                 >
@@ -1131,6 +1128,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                         bgCustomImage: undefined,
                         bgVideoUrl: undefined,
                         bgGradient: undefined,
+                        ...(currentSlide.bgColor?.startsWith('linear-gradient') ? { bgColor: '#1e293b' } : {}),
                       });
                     }}
                     className="text-xs text-rose-600 hover:text-rose-800 font-bold cursor-pointer transition-colors"
@@ -1164,6 +1162,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                         bgCustomImage: undefined,
                         bgVideoUrl: undefined,
                         bgGradient: undefined,
+                        ...(currentSlide.bgColor?.startsWith('linear-gradient') ? { bgColor: '#1e293b' } : {}),
                       });
                     }}
                     className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-black transition-colors cursor-pointer inline-flex items-center gap-1"
@@ -1193,6 +1192,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                         bgCustomImage: undefined,
                         bgVideoUrl: undefined,
                         bgGradient: undefined,
+                        ...(currentSlide.bgColor?.startsWith('linear-gradient') ? { bgColor: '#1e293b' } : {}),
                       });
                     }}
                     className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-black transition-colors cursor-pointer inline-flex items-center gap-1"
@@ -1235,6 +1235,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                         bgCustomImage: undefined,
                         bgVideoUrl: undefined,
                         bgGradient: undefined,
+                        ...(currentSlide.bgColor?.startsWith('linear-gradient') ? { bgColor: '#1e293b' } : {}),
                       });
                     }}
                     className="px-4 py-2 bg-white hover:bg-rose-100 text-rose-700 border-2 border-rose-300 rounded-xl text-xs font-black transition-colors cursor-pointer shrink-0 shadow-xs"
@@ -1638,6 +1639,16 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         {/* ステップ 9: 一番目立たせたい文字（タイトル）を入力してください */}
         {/* ========================================================= */}
         {currentStepNumber === 9 && (
+          isMediaOnlyMode ? (
+            <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
+              <div className="text-base font-black text-slate-700">
+                「背景画像・映像専用」を選択中のため、9番のタイトル文字は選択できません
+              </div>
+              <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                背景画像・映像専用ではタイトルや文字を使わず、「5. 看板の背景」で設定した画像・映像のみを表示します。
+              </p>
+            </div>
+          ) : (
           <div className="space-y-6 max-w-xl mx-auto">
             <div className="space-y-2">
               <div className="flex items-center justify-between mb-1">
@@ -1819,12 +1830,23 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               )}
             </div>
           </div>
+          )
         )}
 
         {/* ========================================================= */}
         {/* ステップ 10: 説明やキャッチフレーズを入力してください */}
         {/* ========================================================= */}
         {currentStepNumber === 10 && (
+          isMediaOnlyMode ? (
+            <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
+              <div className="text-base font-black text-slate-700">
+                「背景画像・映像専用」を選択中のため、10番の説明文は選択できません
+              </div>
+              <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                背景画像・映像専用では説明文やキャッチフレーズを使わず、「5. 看板の背景」で設定した画像・映像のみを表示します。
+              </p>
+            </div>
+          ) : (
           <div className="space-y-6 max-w-xl mx-auto">
             <div className="space-y-2">
               <label className="block text-base font-black text-slate-900 mb-1">
@@ -2015,6 +2037,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               </span>
             </div>
           </div>
+          )
         )}
 
         {/* ========================================================= */}
