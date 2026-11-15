@@ -1469,7 +1469,7 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
 
                             {item.description && (
                               <p
-                                className="opacity-80 break-words leading-tight whitespace-pre-line self-start h-full overflow-hidden flex-1 min-w-0"
+                                className="opacity-80 break-words leading-tight whitespace-pre-line self-start h-full overflow-hidden shrink min-w-0"
                                 style={{
                                   fontSize: `${itemEffectiveDescPt}px`,
                                   color: getCardItemDescColor(),

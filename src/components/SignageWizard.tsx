@@ -1141,18 +1141,65 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
               </div>
 
               {currentSlide.bgType === 'video' && currentSlide.bgVideoUrl ? (
-                <div className="p-3 bg-blue-100/60 rounded-xl flex items-center justify-between">
-                  <span className="text-xs font-black text-blue-900 flex items-center gap-2">
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 text-center space-y-3">
+                  <span className="text-sm font-bold text-slate-600 flex items-center justify-center gap-1.5">
                     <Video className="w-4 h-4 text-blue-600" />
-                    動画が背景として設定されています（全体像が映り、自動ループ再生されます）
+                    <span>現在設定されている背景動画（全体像が映るように表示されます）：</span>
                   </span>
+                  <div className="w-56 h-56 mx-auto rounded-xl overflow-hidden flex items-center justify-center bg-slate-100/70">
+                    <video
+                      src={currentSlide.bgVideoUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="max-w-full max-h-full w-auto h-auto object-contain rounded-xl shadow-sm"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateSlide({
+                        bgType: 'solid',
+                        bgCustomImage: undefined,
+                        bgVideoUrl: undefined,
+                        bgGradient: undefined,
+                      });
+                    }}
+                    className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-black transition-colors cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>この動画を削除する</span>
+                  </button>
                 </div>
-              ) : currentSlide.bgType === 'image' && currentSlide.bgCustomImage ? (
-                <div className="p-3 bg-blue-100/60 rounded-xl flex items-center justify-between">
-                  <span className="text-xs font-black text-blue-900 flex items-center gap-2">
+              ) : currentSlide.bgCustomImage ? (
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 text-center space-y-3">
+                  <span className="text-sm font-bold text-slate-600 flex items-center justify-center gap-1.5">
                     <ImageIcon className="w-4 h-4 text-blue-600" />
-                    画像が背景として設定されています（全体像が綺麗に収まります）
+                    <span>現在設定されている背景画像（全体像が映るように表示されます）：</span>
                   </span>
+                  <div className="w-56 h-56 mx-auto rounded-xl overflow-hidden flex items-center justify-center bg-slate-100/70">
+                    <img
+                      src={currentSlide.bgCustomImage}
+                      alt="現在選択されている背景画像"
+                      className="max-w-full max-h-full w-auto h-auto object-contain rounded-xl shadow-sm"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateSlide({
+                        bgType: 'solid',
+                        bgCustomImage: undefined,
+                        bgVideoUrl: undefined,
+                        bgGradient: undefined,
+                      });
+                    }}
+                    className="px-4 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-black transition-colors cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>この画像を削除する</span>
+                  </button>
                 </div>
               ) : null}
 
