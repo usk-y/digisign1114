@@ -1077,9 +1077,9 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
                               </span>
                               {item.description && (
                                 <p
-                                  className="opacity-85 break-words leading-tight whitespace-pre-line mt-0.5 line-clamp-1"
+                                  className="opacity-95 break-words leading-tight whitespace-pre-line mt-0.5 line-clamp-2 drop-shadow-sm"
                                   style={{
-                                    fontSize: `${tileDescPt}px`,
+                                    fontSize: `${Math.max(10, tileDescPt)}px`,
                                     color: tileDescColor,
                                   }}
                                 >
@@ -1124,42 +1124,113 @@ export const SignageDisplay: React.FC<SignageDisplayProps> = ({
           ) : slide.layoutStyle === 'poster-hero' ? (
             /* ポスター形式（8番の大きな写真を背景に表示し、メニュー11番は使わずタイトル・説明を大胆に配置） */
             slide.writingMode === 'vertical' ? (
-              <div className="relative flex-1 min-h-0 w-full h-full overflow-hidden py-2 px-2">
-                {(['left', 'center', 'right'] as const).map((slot) => {
+              <div className="relative flex-1 min-h-0 w-full h-full overflow-hidden py-3 px-3">
+                {(['left', 'center', 'right'] as const).map((hSlot) => {
                   const headlineH = slide.headlineHorizontalAlign || 'center';
                   const subheadlineH = slide.subheadlineHorizontalAlign || 'center';
-                  const hasHeadline = Boolean(slide.headline && headlineH === slot);
-                  const hasSubheadline = Boolean(slide.subheadline && subheadlineH === slot);
+                  const hasHeadline = Boolean(slide.headline && headlineH === hSlot);
+                  const hasSubheadline = Boolean(slide.subheadline && subheadlineH === hSlot);
                   if (!hasHeadline && !hasSubheadline) return null;
-                  const gapPx = Math.max(14, Math.round((effectiveHeadlinePt || 30) * 0.6));
-                  const bothInSlot = hasHeadline && hasSubheadline;
-                  const slotWrapperPos =
-                    bothInSlot && slot === 'left'
-                      ? 'inset-y-0 left-0 w-[85%]'
-                      : bothInSlot && slot === 'right'
-                      ? 'inset-y-0 right-0 w-[85%]'
-                      : 'inset-0';
-                  const singleJustify =
-                    slot === 'left' ? 'justify-start' : slot === 'right' ? 'justify-end' : 'justify-center';
+
+                  const justifyCls =
+                    hSlot === 'left' ? 'justify-start' : hSlot === 'right' ? 'justify-end' : 'justify-center';
 
                   return (
                     <div
-                      key={slot}
-                      className={`absolute ${slotWrapperPos} flex flex-row-reverse items-stretch pointer-events-none px-1`}
-                      style={{ gap: `${gapPx}px` }}
+                      key={`poster-v-slot-${hSlot}`}
+                      className={`absolute inset-0 flex flex-row ${justifyCls} pointer-events-none p-2 sm:p-4`}
                     >
-                      {hasHeadline &&
-                        renderVerticalHeadline(
-                          `poster-v-${slot}`,
-                          bothInSlot ? 'flex-[1.25] min-w-0 pointer-events-auto' : 'flex-1 min-w-0 pointer-events-auto',
-                          bothInSlot ? 'justify-start' : singleJustify
-                        )}
-                      {hasSubheadline &&
-                        renderVerticalSubheadline(
-                          `poster-v-${slot}`,
-                          'flex-1 min-w-0 pointer-events-auto',
-                          bothInSlot ? 'justify-end' : singleJustify
-                        )}
+                      <div className="pointer-events-auto relative p-1 max-h-full h-full overflow-hidden flex flex-row-reverse items-stretch gap-3 sm:gap-4">
+                        {hasHeadline && (() => {
+                          const vAlign = slide.headlineAlign || 'center';
+                          const itemsCls =
+                            vAlign === 'left' ? 'items-start' : vAlign === 'right' ? 'items-end' : 'items-center';
+
+                          return (
+                            <div
+                              onClick={() => onSelectTextTarget?.('headline')}
+                              className={`relative p-1 max-h-full overflow-hidden flex flex-row ${itemsCls} ${getSelectableClass('headline')}`}
+                              title="クリックして大見出しの書体を変更"
+                            >
+                              <AnimatePresence mode="wait">
+                                <motion.div
+                                  key={`poster-v-h-${slide.id || ''}-${slide.headline || ''}-${slide.textAnimation || 'none'}`}
+                                  variants={getTextAnimationVariants()}
+                                  initial="initial"
+                                  animate="animate"
+                                  className={`flex flex-row h-full ${itemsCls}`}
+                                >
+                                  <h1
+                                    className="font-black tracking-tight drop-shadow-sm whitespace-pre-line break-words"
+                                    style={{
+                                      fontFamily: getTargetFont('headline'),
+                                      color: getTargetTextColor('headline'),
+                                      fontSize: `${effectiveHeadlinePt}px`,
+                                      lineHeight: 1.35,
+                                      writingMode: 'vertical-rl',
+                                      textOrientation: 'upright',
+                                      textAlign: 'center',
+                                      textShadow:
+                                        slide.textAnimation === 'neonFlicker'
+                                          ? `0 0 16px ${slide.accentColor}, 0 0 32px ${slide.accentColor}`
+                                          : isPosterHeroWithPhoto
+                                          ? '0 3px 14px rgba(0,0,0,0.85)'
+                                          : 'none',
+                                    }}
+                                  >
+                                    {slide.headline}
+                                  </h1>
+                                </motion.div>
+                              </AnimatePresence>
+                              {selectedTextTarget === 'headline' && (
+                                <div className="pointer-events-none absolute bottom-1 left-1/2 -translate-x-1/2 z-10 inline-flex items-center gap-1 text-[10px] bg-amber-400 text-slate-950 font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap shadow-xs">
+                                  <Type className="w-3 h-3" /> 見出し変更中
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+
+                        {hasSubheadline && (() => {
+                          const vAlign = slide.subheadlineAlign || 'center';
+                          const itemsCls =
+                            vAlign === 'left' ? 'items-start' : vAlign === 'right' ? 'items-end' : 'items-center';
+
+                          return (
+                            <div
+                              onClick={() => onSelectTextTarget?.('subheadline')}
+                              className={`relative p-1 max-h-full overflow-hidden flex flex-row ${itemsCls} ${getSelectableClass('subheadline')}`}
+                              title="クリックして説明文の書体を変更"
+                            >
+                              <AnimatePresence mode="wait">
+                                <motion.div
+                                  key={`poster-v-sub-${slide.id || ''}-${slide.subheadline || ''}-${slide.textAnimation || 'none'}`}
+                                  variants={getTextAnimationVariants()}
+                                  initial="initial"
+                                  animate="animate"
+                                  className={`flex flex-row h-full ${itemsCls}`}
+                                >
+                                  <p
+                                    className="font-medium opacity-90 whitespace-pre-line break-words"
+                                    style={{
+                                      fontFamily: getTargetFont('subheadline'),
+                                      color: getTargetTextColor('subheadline'),
+                                      fontSize: `${effectiveSubheadlinePt}px`,
+                                      lineHeight: 1.35,
+                                      writingMode: 'vertical-rl',
+                                      textOrientation: 'upright',
+                                      textAlign: 'center',
+                                      textShadow: isPosterHeroWithPhoto ? '0 2px 10px rgba(0,0,0,0.85)' : 'none',
+                                    }}
+                                  >
+                                    {slide.subheadline}
+                                  </p>
+                                </motion.div>
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </div>
                   );
                 })}
