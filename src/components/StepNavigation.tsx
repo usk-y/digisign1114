@@ -38,7 +38,7 @@ interface StepNavigationProps {
 
 export const StepNavigation: React.FC<StepNavigationProps> = ({
   currentStepNumber,
-  totalSteps = 16,
+  totalSteps = 17,
   onSelectStepNumber,
   onOpenFullscreen,
   onSaveOverwrite,

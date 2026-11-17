@@ -153,7 +153,7 @@ export interface SignageFolder {
   updatedAt: string;
 }
 
-export type StepNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16;
+export type StepNumber = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17;
 
 export type StepKey = 
   | 'step1_folders'      // 1: 看板
@@ -167,11 +167,12 @@ export type StepKey =
   | 'step9_title'        // 9: 一番目立たせたい文字（タイトル・改行対応・pt手入力）
   | 'step10_subtitle'    // 10: 説明やキャッチフレーズ（pt手入力）
   | 'step11_menu'        // 11: おすすめ商品やメニュー（おすすめ枠複数・品名価格直下pt・タグ最大6色）
-  | 'step12_footer'      // 12: 看板の足元の文字とQRコード
-  | 'step13_font'        // 13: 文字の書体（フォント）
-  | 'step14_text_anim'   // 14: 文字の動く効果（10種類）
-  | 'step15_duration'    // 15: 表示する秒数（手入力対応）
-  | 'step16_finish';     // 16: 看板の完成 ＆ 2枚目の作成確認
+  | 'step12_footer'      // 12: 看板の足元の文字
+  | 'step13_qrcode'      // 13: 店頭QRコード
+  | 'step14_font'        // 14: 文字の書体（フォント）
+  | 'step15_text_anim'   // 15: 文字の動く効果（10種類）
+  | 'step16_duration'    // 16: 表示する秒数（手入力対応）
+  | 'step17_finish';     // 17: 看板の完成 ＆ 2枚目の作成確認
 
 export interface WizardStepInfo {
   step: StepNumber;

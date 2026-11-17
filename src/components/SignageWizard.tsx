@@ -505,7 +505,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         <div className="inline-flex items-center justify-center gap-1.5 px-3 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs sm:text-sm font-black border border-blue-200">
           <span>ページ {currentStepNumber}</span>
           <span>/</span>
-          <span>16</span>
+          <span>{WIZARD_STEPS.length}</span>
         </div>
         <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-snug">
           {stepInfo.title}
@@ -2459,11 +2459,11 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* ステップ 12: 看板の足元の文字とQRコードを入れてください */}
+        {/* ステップ 12: 看板の足元の文字を入れてください */}
         {/* ========================================================= */}
         {currentStepNumber === 12 && (
           <div className="space-y-6 max-w-xl mx-auto">
-            {/* 1. 足元の文字テキスト */}
+            {/* 足元の文字テキスト */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="block text-base font-black text-slate-900">
@@ -2500,8 +2500,15 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
                 />
               </div>
             </div>
+          </div>
+        )}
 
-            {/* 2. 店頭QRコードの表示 */}
+        {/* ========================================================= */}
+        {/* ステップ 13: 店頭QRコードを入れてください */}
+        {/* ========================================================= */}
+        {currentStepNumber === 13 && (
+          <div className="space-y-6 max-w-xl mx-auto">
+            {/* 店頭QRコードの表示 */}
             <div className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-200 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -2616,9 +2623,9 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* ステップ 13: 文字の書体（フォント）を選んでください */}
+        {/* ステップ 14: 文字の書体（フォント）を選んでください */}
         {/* ========================================================= */}
-        {currentStepNumber === 13 && (
+        {currentStepNumber === 14 && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {FONT_OPTIONS.map((f) => {
@@ -2665,13 +2672,13 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* ステップ 14: 文字の動く効果を選んでください */}
+        {/* ステップ 15: 文字の動く効果を選んでください */}
         {/* ========================================================= */}
-        {currentStepNumber === 14 && (
+        {currentStepNumber === 15 && (
           isMediaOnlyMode ? (
             <div className="max-w-xl mx-auto p-6 rounded-2xl bg-slate-100 border-2 border-slate-200 text-center space-y-3">
               <div className="text-base font-black text-slate-700">
-                「背景画像・映像専用」を選択中のため、14番の「文字の動く効果」は選択できません
+                「背景画像・映像専用」を選択中のため、15番の「文字の動く効果」は選択できません
               </div>
               <p className="text-xs font-bold text-slate-500 leading-relaxed">
                 背景画像・映像専用では文字を使用せず、「5. 看板の背景」で設定した画像・映像のみを表示します。
@@ -2719,9 +2726,9 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* ステップ 15: この看板を表示する秒数を選んでください */}
+        {/* ステップ 16: この看板を表示する秒数を選んでください */}
         {/* ========================================================= */}
-        {currentStepNumber === 15 && (
+        {currentStepNumber === 16 && (
           <div className="space-y-6 max-w-xl mx-auto text-center">
             <div className="p-6 bg-blue-50/80 rounded-2xl border-2 border-blue-200 space-y-3">
               <span className="text-sm font-bold text-blue-700 block">現在の設定時間（スマホの半角数字で999秒まで手入力できます）：</span>
@@ -2793,9 +2800,9 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
         )}
 
         {/* ========================================================= */}
-        {/* ステップ 16: 看板が完成しました！新しい看板を追加しますか？ */}
+        {/* ステップ 17: 看板が完成しました！新しい看板を追加しますか？ */}
         {/* ========================================================= */}
-        {currentStepNumber === 16 && (
+        {currentStepNumber === 17 && (
           <div className="space-y-6 max-w-xl mx-auto text-center">
             <div className="p-6 bg-emerald-50 rounded-2xl border-2 border-emerald-200 space-y-2">
               <div className="w-12 h-12 mx-auto rounded-full bg-emerald-600 text-white flex items-center justify-center">

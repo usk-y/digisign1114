@@ -25,6 +25,7 @@ interface PreviewPanelProps {
   onSelectTextTarget: (target: TextTarget) => void;
   onApplyQuickFont: (fontFamily: FontFamily) => void;
   isMobileLandscape?: boolean;
+  isWideLayout?: boolean;
 }
 
 import { FONT_OPTIONS as fontOptions, TARGET_NAME_MAP as targetNameMap } from '../data/fonts';
@@ -40,13 +41,17 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   onSelectTextTarget,
   onApplyQuickFont,
   isMobileLandscape = false,
+  isWideLayout = false,
 }) => {
   const displayContainerRef = useRef<HTMLDivElement>(null);
+  const previewHeaderRef = useRef<HTMLDivElement>(null);
+  const fontBarRef = useRef<HTMLDivElement>(null);
+  const warningBannerRef = useRef<HTMLDivElement>(null);
 
   // スケールモード: 'auto'（見切れなし自動フィット）または 'manual'（手動調整）
   const [scaleMode, setScaleMode] = useState<'auto' | 'manual'>('auto');
-  const [autoScale, setAutoScale] = useState<number>(0.55);
-  const [manualScale, setManualScale] = useState<number>(0.55);
+  const [autoScale, setAutoScale] = useState<number>(0.34);
+  const [manualScale, setManualScale] = useState<number>(0.34);
 
   // スマホ横画面時のフォントパネル折りたたみ状態
   const [isFontBarOpen, setIsFontBarOpen] = useState<boolean>(!isMobileLandscape);
@@ -60,32 +65,59 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     const cssPadX = (parseFloat(styles.paddingLeft) || 0) + (parseFloat(styles.paddingRight) || 0);
     const cssPadY = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
 
-    // 枠線・シャドウ・下部ページネーション操作部を含めて確実に見切れない余白を確保
     const safeExtraX = isMobileLandscape ? 8 : 16;
-    const safeExtraY = slidesCount > 1
-      ? (isMobileLandscape ? 36 : 48)
-      : (isMobileLandscape ? 10 : 18);
-
     const availableWidth = Math.max(80, clientWidth - cssPadX - safeExtraX);
-    const availableHeight = Math.max(100, clientHeight - cssPadY - safeExtraY);
 
     const isLandscape = currentSlide.aspect === '16:9' || currentSlide.aspect === 'horizontal';
     const baseW = isLandscape ? 960 : 540;
     const baseH = isLandscape ? 540 : 960;
 
+    let availableHeight: number;
+    if (isWideLayout) {
+      // PC 2ペイン時：固定高さコンテナ内の実測高さから計算（内部absolute配置により縮小ループなし）
+      const safeExtraY = 12;
+      availableHeight = Math.max(100, clientHeight - cssPadY - safeExtraY);
+    } else {
+      // スマホ・タブレット縦並び時：上部ナビ・プレビューバー・書体バー・下部フッターの実測高さを差し引き、さらに下部フッターとの衝突を防ぐ安全余白を確保
+      const headerH = document.querySelector('header')?.getBoundingClientRect().height || 64;
+      const footerH = document.querySelector('footer')?.getBoundingClientRect().height || 76;
+      const previewHeaderH = previewHeaderRef.current?.getBoundingClientRect().height || 36;
+      const fontBarH = isFontBarOpen && fontBarRef.current ? fontBarRef.current.getBoundingClientRect().height + 4 : 0;
+      const warningH = warningBannerRef.current ? warningBannerRef.current.getBoundingClientRect().height : 0;
+      const visibleChildrenCount = 2 + (isFontBarOpen ? 1 : 0) + (warningBannerRef.current ? 1 : 0);
+      const gapsH = Math.max(0, visibleChildrenCount - 1) * 6;
+      const viewportH = Math.min(
+        window.innerHeight,
+        window.visualViewport?.height || window.innerHeight,
+        document.documentElement.clientHeight || window.innerHeight
+      );
+      // プレビュー上部に多少の余白が残るスクロール位置でも、看板の最下部（フッター・QR）が固定フッターに隠れない安全マージン
+      const outerMarginY = isMobileLandscape ? 20 : 52;
+
+      const remainingBoxH = Math.max(
+        120,
+        viewportH - headerH - footerH - previewHeaderH - fontBarH - warningH - gapsH - outerMarginY
+      );
+      const cappedBoxH = !isLandscape && !isMobileLandscape
+        ? Math.min(remainingBoxH, Math.round(viewportH * 0.54))
+        : remainingBoxH;
+      const safeExtraY = 8;
+      availableHeight = Math.max(80, cappedBoxH - cssPadY - safeExtraY);
+    }
+
     // 基準キャンバスに対する縦横の収容比率
     const scaleByW = availableWidth / baseW;
     const scaleByH = availableHeight / baseH;
-    
+
     // コンテナ全体に確実に収まる比率を適用
     const fit = Math.min(scaleByW, scaleByH);
-    const clampedFit = Math.max(0.15, Math.min(fit, 2.0));
-    
-    setAutoScale(clampedFit);
+    const clampedFit = Math.round(Math.max(0.15, Math.min(fit, 2.0)) * 1000) / 1000;
+
+    setAutoScale((prev) => (Math.abs(prev - clampedFit) < 0.001 ? prev : clampedFit));
     if (scaleMode === 'auto') {
-      setManualScale(clampedFit);
+      setManualScale((prev) => (Math.abs(prev - clampedFit) < 0.001 ? prev : clampedFit));
     }
-  }, [isMobileLandscape, scaleMode, slidesCount, currentSlide.aspect]);
+  }, [isMobileLandscape, isWideLayout, isFontBarOpen, scaleMode, slidesCount, currentSlide.aspect]);
 
   useEffect(() => {
     calculateFitScale();
@@ -96,6 +128,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     });
     observer.observe(displayContainerRef.current);
     window.addEventListener('resize', calculateFitScale);
+    window.visualViewport?.addEventListener('resize', calculateFitScale);
 
     // 初回マウント時やスライド・フォントバー切替時に強制再計算
     const timer = setTimeout(calculateFitScale, 50);
@@ -103,9 +136,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     return () => {
       observer.disconnect();
       window.removeEventListener('resize', calculateFitScale);
+      window.visualViewport?.removeEventListener('resize', calculateFitScale);
       clearTimeout(timer);
     };
-  }, [calculateFitScale, currentSlide.id, isFontBarOpen]);
+  }, [calculateFitScale, currentSlide.id, currentSlide.layoutStyle, isFontBarOpen, isWideLayout]);
 
   // 横画面切替時にフォントバーの開閉を自動連動
   useEffect(() => {
@@ -134,11 +168,14 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   };
 
   return (
-    <div className="w-full h-full flex flex-col items-center min-h-0 overflow-hidden gap-1.5 bg-white">
+    <div className={`w-full ${isWideLayout ? 'h-full overflow-hidden' : ''} flex flex-col items-center min-h-0 gap-1.5 bg-white`}>
       {/* プレビュー上部ヘッダー操作バー */}
-      <div className={`w-full bg-white border border-slate-200 rounded-xl flex items-center justify-between shadow-xs shrink-0 ${
-        isMobileLandscape ? 'px-2 py-1' : 'px-2.5 py-1.5'
-      }`}>
+      <div
+        ref={previewHeaderRef}
+        className={`w-full bg-white border border-slate-200 rounded-xl flex items-center justify-between shadow-xs shrink-0 ${
+          isMobileLandscape ? 'px-2 py-1' : 'px-2.5 py-1.5'
+        }`}
+      >
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="text-xs font-black text-slate-800 flex items-center gap-1 truncate">
             <Eye className="w-3.5 h-3.5 text-blue-600 shrink-0" />
@@ -201,7 +238,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
       {/* 看板文字クリック連動：フォント変更バー（折りたたみ可能） */}
       {isFontBarOpen && (
-        <div className="w-full mb-1 bg-white border border-blue-200 rounded-xl p-1.5 shadow-xs shrink-0 transition-all">
+        <div
+          ref={fontBarRef}
+          className="w-full mb-1 bg-white border border-blue-200 rounded-xl p-1.5 shadow-xs shrink-0 transition-all"
+        >
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-1.5">
               <Type className="w-3 h-3 text-blue-600 shrink-0" />
@@ -257,7 +297,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
         if (!isMediaOnlyEmpty) return null;
         return (
-          <div className="w-full shrink-0 bg-rose-50 border border-rose-200 rounded-xl px-3 py-1.5 text-center">
+          <div
+            ref={warningBannerRef}
+            className="w-full shrink-0 bg-rose-50 border border-rose-200 rounded-xl px-3 py-1.5 text-center"
+          >
             <span className="text-xs font-black text-rose-600">
               ５の「看板の背景」を設定してください
             </span>
@@ -271,11 +314,29 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       */}
       <div
         ref={displayContainerRef}
-        className="w-full flex-1 min-h-0 bg-slate-100/70 rounded-2xl sm:rounded-3xl border border-slate-200 flex flex-col items-center justify-center overflow-hidden shadow-inner relative p-2"
+        className={
+          isWideLayout
+            ? `w-full flex-1 min-h-0 bg-slate-100/70 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-inner relative ${
+                scaleMode === 'manual'
+                  ? `overflow-auto p-3 ${slidesCount > 1 ? 'pb-12' : ''}`
+                  : `overflow-hidden pt-2 px-2 ${slidesCount > 1 ? 'pb-12' : 'pb-2'}`
+              }`
+            : `w-full bg-slate-100/70 rounded-2xl sm:rounded-3xl border border-slate-200 flex flex-col items-center justify-center shadow-inner relative ${
+                slidesCount > 1 ? 'pt-3 pb-12 px-2' : 'py-3 px-2'
+              } ${scaleMode === 'manual' ? 'overflow-auto' : 'overflow-hidden'}`
+        }
       >
-        <div 
+        <div
           key={`${currentSlide.id}-${replayKey}`}
-          className="flex items-center justify-center transition-transform duration-100 ease-out"
+          className={
+            isWideLayout
+              ? `${
+                  scaleMode === 'auto'
+                    ? `absolute top-2 left-2 right-2 ${slidesCount > 1 ? 'bottom-12' : 'bottom-2'}`
+                    : 'min-w-full min-h-full'
+                } flex items-center justify-center transition-transform duration-100 ease-out`
+              : 'flex items-center justify-center transition-transform duration-100 ease-out'
+          }
         >
           <SignageDisplay
             slide={currentSlide}
@@ -287,7 +348,7 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
         {/* スライド切替（複数スライド時） */}
         {slidesCount > 1 && (
-          <div className="absolute bottom-2.5 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full border border-slate-300 shadow-lg z-20">
+          <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full border border-slate-300 shadow-lg z-20">
             <button
               onClick={() => {
                 onSelectSlideIndex((currentSlideIndex - 1 + slidesCount) % slidesCount);

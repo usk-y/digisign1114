@@ -59,26 +59,31 @@ export const WIZARD_STEPS: WizardStepInfo[] = [
   {
     step: 12,
     key: 'step12_footer',
-    title: '看板の足元の文字とQRコードを入れてください',
+    title: '看板の足元の文字を入れてください',
   },
   {
     step: 13,
-    key: 'step13_font',
-    title: '文字の書体（フォント）を選んでください',
+    key: 'step13_qrcode',
+    title: '店頭QRコードを入れてください',
   },
   {
     step: 14,
-    key: 'step14_text_anim',
-    title: '文字の動く効果を選んでください',
+    key: 'step14_font',
+    title: '文字の書体（フォント）を選んでください',
   },
   {
     step: 15,
-    key: 'step15_duration',
-    title: 'この看板を表示する秒数を選んでください',
+    key: 'step15_text_anim',
+    title: '文字の動く効果を選んでください',
   },
   {
     step: 16,
-    key: 'step16_finish',
+    key: 'step16_duration',
+    title: 'この看板を表示する秒数を選んでください',
+  },
+  {
+    step: 17,
+    key: 'step17_finish',
     title: '看板が完成しました！新しい看板を追加しますか？',
   },
 ];
