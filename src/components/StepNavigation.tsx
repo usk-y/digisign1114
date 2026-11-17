@@ -98,7 +98,7 @@ export const StepNavigation: React.FC<StepNavigationProps> = ({
   const stepNumbers = Array.from({ length: totalSteps }, (_, i) => (i + 1) as StepNumber);
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm px-2 sm:px-4 py-2 shrink-0 select-none">
+    <header className="z-40 bg-white border-b border-slate-200 shadow-sm px-2 sm:px-4 py-2 shrink-0 select-none">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-1.5 sm:gap-3">
         {/* 
           左側：看板の枚数選択ボタン（ユーザー指示：左上の「看板」のボタンからも○枚目を選べるように）

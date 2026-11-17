@@ -497,7 +497,7 @@ export const SignageWizard: React.FC<SignageWizardProps> = ({
   ];
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-5 pb-20">
+    <div className="w-full max-w-4xl mx-auto space-y-5 pb-2 lg:pb-6">
       {/* 
         全ページ統一の見出しタイトル
       */}

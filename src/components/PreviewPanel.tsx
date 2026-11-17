@@ -52,9 +52,11 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
   const [scaleMode, setScaleMode] = useState<'auto' | 'manual'>('auto');
   const [autoScale, setAutoScale] = useState<number>(0.34);
   const [manualScale, setManualScale] = useState<number>(0.34);
+  const [manualMaxBoxH, setManualMaxBoxH] = useState<number | null>(null);
 
-  // スマホ横画面時のフォントパネル折りたたみ状態
-  const [isFontBarOpen, setIsFontBarOpen] = useState<boolean>(!isMobileLandscape);
+  // スマホ横画面や極端に高さが低い環境ではフォントパネルを自動折りたたみ
+  const isCompactViewport = typeof window !== 'undefined' && window.innerHeight < 560;
+  const [isFontBarOpen, setIsFontBarOpen] = useState<boolean>(!isMobileLandscape && !isCompactViewport);
 
   // コンテナサイズに応じた 9:16 / 16:9 自動フィットスケールの計算（上下左右見切れゼロ保証）
   const calculateFitScale = useCallback(() => {
@@ -77,29 +79,40 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       // PC 2ペイン時：固定高さコンテナ内の実測高さから計算（内部absolute配置により縮小ループなし）
       const safeExtraY = 12;
       availableHeight = Math.max(100, clientHeight - cssPadY - safeExtraY);
+      setManualMaxBoxH(null);
     } else {
-      // スマホ・タブレット縦並び時：上部ナビ・プレビューバー・書体バー・下部フッターの実測高さを差し引き、さらに下部フッターとの衝突を防ぐ安全余白を確保
-      const headerH = document.querySelector('header')?.getBoundingClientRect().height || 64;
-      const footerH = document.querySelector('footer')?.getBoundingClientRect().height || 76;
-      const previewHeaderH = previewHeaderRef.current?.getBoundingClientRect().height || 36;
-      const fontBarH = isFontBarOpen && fontBarRef.current ? fontBarRef.current.getBoundingClientRect().height + 4 : 0;
-      const warningH = warningBannerRef.current ? warningBannerRef.current.getBoundingClientRect().height : 0;
-      const visibleChildrenCount = 2 + (isFontBarOpen ? 1 : 0) + (warningBannerRef.current ? 1 : 0);
-      const gapsH = Math.max(0, visibleChildrenCount - 1) * 6;
+      // スマホ・タブレット縦並び時：<main>の実際の表示領域（ヘッダーとフッターの間）から算出して100%見切れなしを保証
+      const mainEl = el.closest('main');
+      const mainStyles = mainEl ? window.getComputedStyle(mainEl) : null;
+      const mainPadY = mainStyles
+        ? (parseFloat(mainStyles.paddingTop) || 0) + (parseFloat(mainStyles.paddingBottom) || 0)
+        : 24;
       const viewportH = Math.min(
         window.innerHeight,
         window.visualViewport?.height || window.innerHeight,
         document.documentElement.clientHeight || window.innerHeight
       );
-      // プレビュー上部に多少の余白が残るスクロール位置でも、看板の最下部（フッター・QR）が固定フッターに隠れない安全マージン
-      const outerMarginY = isMobileLandscape ? 20 : 52;
+      const headerH = document.querySelector('header')?.getBoundingClientRect().height || 64;
+      const footerH = document.querySelector('footer')?.getBoundingClientRect().height || 76;
+      const mainInnerH = mainEl
+        ? Math.max(180, mainEl.clientHeight - mainPadY - 8)
+        : Math.max(180, viewportH - headerH - footerH - 32);
+
+      const previewHeaderH = previewHeaderRef.current?.getBoundingClientRect().height || 36;
+      const fontBarH = isFontBarOpen && fontBarRef.current ? fontBarRef.current.getBoundingClientRect().height + 4 : 0;
+      const warningH = warningBannerRef.current ? warningBannerRef.current.getBoundingClientRect().height : 0;
+      const visibleChildrenCount = 2 + (isFontBarOpen ? 1 : 0) + (warningBannerRef.current ? 1 : 0);
+      const gapsH = Math.max(0, visibleChildrenCount - 1) * 6;
 
       const remainingBoxH = Math.max(
         120,
-        viewportH - headerH - footerH - previewHeaderH - fontBarH - warningH - gapsH - outerMarginY
+        mainInnerH - previewHeaderH - fontBarH - warningH - gapsH - 4
       );
+      setManualMaxBoxH(remainingBoxH);
+
+      const maxCapForViewport = isFontBarOpen ? 410 : 470;
       const cappedBoxH = !isLandscape && !isMobileLandscape
-        ? Math.min(remainingBoxH, Math.round(viewportH * 0.54))
+        ? Math.min(remainingBoxH, Math.round(viewportH * 0.52), maxCapForViewport)
         : remainingBoxH;
       const safeExtraY = 8;
       availableHeight = Math.max(80, cappedBoxH - cssPadY - safeExtraY);
@@ -127,6 +140,10 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       calculateFitScale();
     });
     observer.observe(displayContainerRef.current);
+    const mainEl = displayContainerRef.current.closest('main');
+    if (mainEl) {
+      observer.observe(mainEl);
+    }
     window.addEventListener('resize', calculateFitScale);
     window.visualViewport?.addEventListener('resize', calculateFitScale);
 
@@ -141,14 +158,14 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
     };
   }, [calculateFitScale, currentSlide.id, currentSlide.layoutStyle, isFontBarOpen, isWideLayout]);
 
-  // 横画面切替時にフォントバーの開閉を自動連動
+  // 横画面または画面高さが低い環境でのフォントバー開閉連動
   useEffect(() => {
-    if (isMobileLandscape) {
+    if (isMobileLandscape || (!isWideLayout && window.innerHeight < 560)) {
       setIsFontBarOpen(false);
     } else {
       setIsFontBarOpen(true);
     }
-  }, [isMobileLandscape]);
+  }, [isMobileLandscape, isWideLayout]);
 
   const activeScale = scaleMode === 'auto' ? autoScale : manualScale;
 
@@ -314,6 +331,11 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
       */}
       <div
         ref={displayContainerRef}
+        style={
+          !isWideLayout && scaleMode === 'manual' && manualMaxBoxH
+            ? { maxHeight: `${manualMaxBoxH}px` }
+            : undefined
+        }
         className={
           isWideLayout
             ? `w-full flex-1 min-h-0 bg-slate-100/70 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-inner relative ${
@@ -321,7 +343,9 @@ export const PreviewPanel: React.FC<PreviewPanelProps> = ({
                   ? `overflow-auto p-3 ${slidesCount > 1 ? 'pb-12' : ''}`
                   : `overflow-hidden pt-2 px-2 ${slidesCount > 1 ? 'pb-12' : 'pb-2'}`
               }`
-            : `w-full bg-slate-100/70 rounded-2xl sm:rounded-3xl border border-slate-200 flex flex-col items-center justify-center shadow-inner relative ${
+            : `w-full bg-slate-100/70 rounded-2xl sm:rounded-3xl border border-slate-200 flex flex-col items-center ${
+                scaleMode === 'manual' ? 'justify-start' : 'justify-center'
+              } shadow-inner relative ${
                 slidesCount > 1 ? 'pt-3 pb-12 px-2' : 'py-3 px-2'
               } ${scaleMode === 'manual' ? 'overflow-auto' : 'overflow-hidden'}`
         }

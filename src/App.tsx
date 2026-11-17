@@ -214,6 +214,7 @@ export default function App() {
         }
       : {};
 
+  const mainContainerRef = useRef<HTMLElement>(null);
   const wizardContainerRef = useRef<HTMLDivElement>(null);
 
   // 画面および編集エリアの最上部へ自動スクロール
@@ -221,6 +222,9 @@ export default function App() {
     window.scrollTo({ top: 0, behavior });
     document.documentElement.scrollTo({ top: 0, behavior });
     document.body.scrollTo({ top: 0, behavior });
+    if (mainContainerRef.current) {
+      mainContainerRef.current.scrollTo({ top: 0, behavior });
+    }
     if (wizardContainerRef.current) {
       wizardContainerRef.current.scrollTo({ top: 0, behavior });
     }
@@ -271,7 +275,7 @@ export default function App() {
   const isWideLayout = windowWidth >= 1024;
 
   return (
-    <div className="min-h-screen w-full bg-white text-slate-900 flex flex-col font-sans select-none">
+    <div className="h-[100dvh] w-full bg-white text-slate-900 flex flex-col font-sans select-none overflow-hidden">
       {/* 
         上部ヘッダー：
         ・左上看板ボタンから○枚目を直接選べるドロップダウン
@@ -313,10 +317,18 @@ export default function App() {
         - 768px〜1024px (MD): 縦に並べて両方表示
         - 768px以下 (SM): タブ切り替え（エディタ or プレビュー）
       */}
-      <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-5 pb-32">
-        <div className={`flex flex-col ${isWideLayout ? 'lg:flex-row' : ''} gap-6 h-full min-h-0`}>
+      <main
+        ref={mainContainerRef}
+        className={`flex-1 min-h-0 w-full max-w-7xl mx-auto p-2.5 sm:p-4 ${
+          isWideLayout ? 'overflow-hidden' : 'overflow-y-auto'
+        }`}
+      >
+        <div className={`flex flex-col ${isWideLayout ? 'lg:flex-row h-full min-h-0' : ''} gap-3 lg:gap-6`}>
           {/* 左側 / 上部：1ページ1項目の選択画面（SignageWizard） */}
-          <div ref={wizardContainerRef} className="flex-1 min-h-0 overflow-y-auto">
+          <div
+            ref={wizardContainerRef}
+            className={isWideLayout ? 'flex-1 min-h-0 overflow-y-auto pr-1' : 'w-full'}
+          >
             <SignageWizard
               currentStepNumber={currentStepNumber}
               currentSlide={currentSlide}
@@ -341,8 +353,8 @@ export default function App() {
           </div>
 
           {/* 右側 / 下部：看板プレビュー */}
-          <div className={`${isWideLayout ? 'lg:w-[400px] xl:w-[460px] 2xl:w-[500px]' : 'w-full max-w-xl mx-auto'} flex flex-col shrink-0`}>
-            <div className={`${isWideLayout ? 'sticky top-[72px] h-[calc(100vh-164px)]' : ''} flex flex-col`}>
+          <div className={`${isWideLayout ? 'lg:w-[400px] xl:w-[460px] 2xl:w-[500px] h-full min-h-0' : 'w-full max-w-xl mx-auto pb-2'} flex flex-col shrink-0`}>
+            <div className={`${isWideLayout ? 'h-full min-h-0' : ''} flex flex-col`}>
                 {isSignboardActive ? (
                   <PreviewPanel
                     currentSlide={currentSlide}
@@ -379,7 +391,7 @@ export default function App() {
         最下部固定フッターバー（シニア向け）：
         「ページ ◯ / 14」の大きな表示 ＆ 「← まえへ」「つぎへ →」の大きなボタン
       */}
-      <footer className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t-2 border-slate-200 shadow-xl px-2.5 sm:px-4 py-2.5 sm:py-3">
+      <footer className="shrink-0 z-40 bg-white border-t-2 border-slate-200 shadow-xl px-2.5 sm:px-4 py-2 sm:py-2.5">
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
           {/* まえへ ボタン */}
           <button
